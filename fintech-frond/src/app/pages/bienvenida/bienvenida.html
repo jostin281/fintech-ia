@@ -1,0 +1,234 @@
+<div
+  class="relative bg-[#070a13] text-white font-sans antialiased h-screen overflow-hidden flex flex-col selection:bg-cyan-500 selection:text-black"
+>
+  <!-- ===================== FONDO CÓSMICO ===================== -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <canvas #neuralCanvas class="w-full h-full opacity-85" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.85;z-index:0;"></canvas>
+
+    <!-- Orbe principal gris -->
+    <div
+      class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-slate-600/20 via-slate-700/10 to-slate-500/20 rounded-full blur-[150px]"
+    ></div>
+    <!-- Orbe inferior izquierdo gris -->
+    <div
+      class="absolute bottom-10 left-1/4 w-[450px] h-[450px] bg-slate-500/15 rounded-full blur-[130px] animate-pulse-glow"
+    ></div>
+    <!-- Orbe derecho accent -->
+    <div
+      class="absolute top-1/3 right-0 w-[350px] h-[350px] bg-purple-600/10 rounded-full blur-[120px]"
+    ></div>
+
+    <!-- Partículas decorativas -->
+    <div class="absolute top-1/3 left-1/5 w-3 h-3 rounded-full bg-cyan-400/60 blur-[1px] animate-float-1"></div>
+    <div class="absolute top-2/3 right-1/4 w-4 h-4 rounded-full bg-purple-400/50 blur-[2px] animate-float-2"></div>
+    <div class="absolute bottom-1/4 left-1/3 w-2 h-2 rounded-full bg-blue-300/70 blur-[1px] animate-float-1"></div>
+    <div class="absolute top-1/2 right-1/5 w-2 h-2 rounded-full bg-cyan-300/50 blur-[1px] animate-float-2"></div>
+  </div>
+
+  <!-- ===================== HEADER NAVBAR ===================== -->
+  <header class="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+    <!-- Logo -->
+    <a href="#" class="flex items-center gap-3 group">
+      <div class="relative w-10 h-10 flex items-center justify-center">
+        <svg
+          class="w-full h-full text-cyan-400 group-hover:text-cyan-300 transition-colors duration-300 drop-shadow-[0_0_10px_rgba(34,211,238,0.6)]"
+          viewBox="0 0 100 100"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="6"
+        >
+          <polygon points="50,5 90,27.5 90,72.5 50,95 10,72.5 10,27.5" fill="rgba(6, 182, 212, 0.15)" />
+          <path d="M35 50L45 60L65 40" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+      <span class="text-2xl font-extrabold tracking-tight text-white group-hover:text-cyan-200 transition-colors duration-300"
+        >Fintech<span class="text-cyan-400">AI</span></span
+      >
+    </a>
+
+    <!-- Nav derecho -->
+    <div class="hidden sm:flex items-center gap-6">
+      <a
+        href="#features"
+        class="text-sm font-medium text-slate-400 hover:text-white transition-colors duration-300"
+        >Funciones</a
+      >
+      <a
+        routerLink="/login"
+        class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 hover:border-cyan-400 transition-all duration-300"
+      >
+        Iniciar sesión
+        <span class="text-base">→</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ===================== HERO PRINCIPAL ===================== -->
+  <main class="relative z-10 flex-1 flex items-center justify-center px-4 overflow-hidden">
+    <section class="w-full max-w-3xl animate-hero-up">
+      <div
+        class="relative bg-slate-900/60 backdrop-blur-xl border border-cyan-500/25 rounded-3xl p-6 sm:p-14 shadow-[0_0_60px_rgba(6,182,212,0.12)] overflow-hidden text-center flex flex-col items-center"
+      >
+        <!-- Halo superior -->
+        <div class="absolute -top-28 left-1/2 -translate-x-1/2 w-96 h-32 bg-cyan-400/8 blur-3xl rounded-full pointer-events-none"></div>
+        <!-- Grid decorativo sutil -->
+        <div
+          class="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style="background-image: linear-gradient(rgba(6,182,212,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,0.8) 1px, transparent 1px); background-size: 48px 48px;"
+        ></div>
+
+        <!-- Badge de Estado -->
+        <div class="w-full flex justify-end mb-4 sm:mb-0 sm:absolute sm:top-6 sm:right-6 sm:w-auto">
+          <div [class]="badgeClasses()">
+            <span class="relative flex h-2.5 w-2.5">
+              <span
+                class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                [class]="badgePingClasses()"
+              ></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5" [class]="badgeDotClasses()"></span>
+            </span>
+            <span class="font-semibold tracking-wide text-white">{{ badgeText() }}</span>
+          </div>
+        </div>
+
+        <!-- Ícono IA Robótico -->
+        <div class="relative my-6 group">
+          <div
+            class="absolute -inset-3 rounded-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 opacity-40 blur-sm group-hover:opacity-75 transition duration-500"
+            [class]="isProcessing() ? 'animate-spin' : 'animate-spin-slow'"
+          ></div>
+
+          <div
+            class="relative w-24 h-24 rounded-full bg-slate-950/90 border border-cyan-400/50 flex items-center justify-center shadow-[0_0_35px_rgba(6,182,212,0.4)] transition-all duration-500 overflow-hidden"
+            [class]="isProcessing() ? 'ring-4 ring-cyan-400 scale-110 shadow-[0_0_50px_rgba(34,211,238,0.8)]' : ''"
+          >
+            <svg
+              class="w-12 h-12 text-cyan-400 transition-transform duration-500 group-hover:scale-110 drop-shadow-[0_0_12px_rgba(34,211,238,0.8)]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="11" width="18" height="10" rx="3" />
+              <circle cx="9" cy="16" r="1" fill="currentColor" />
+              <circle cx="15" cy="16" r="1" fill="currentColor" />
+              <path d="M12 2v4" />
+              <circle cx="12" cy="2" r="1.5" fill="currentColor" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+
+            @if (isProcessing()) {
+              <div class="absolute inset-0 overflow-hidden rounded-full">
+                <div class="w-full h-1 bg-cyan-300 shadow-[0_0_12px_#22d3ee] animate-scan"></div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Título -->
+        <h1 class="mt-2 text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight max-w-2xl">
+          Controla tus finanzas con
+          <span
+            class="bg-gradient-to-r from-cyan-400 via-blue-300 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]"
+            >Inteligencia Artificial</span
+          >
+        </h1>
+
+        <p class="mt-5 text-sm sm:text-base text-slate-300/80 leading-relaxed max-w-xl">
+          Optimiza tu presupuesto, predice tu flujo de caja y toma decisiones financieras estratégicas respaldadas por
+          modelos de aprendizaje profundo en tiempo real.
+        </p>
+
+        <!-- Stats rápidas -->
+        <div class="mt-8 flex flex-wrap justify-center gap-4 w-full" id="features">
+          <div class="stat-card">
+            <div class="w-9 h-9 rounded-xl bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" />
+              </svg>
+            </div>
+            <div class="text-left">
+              <p class="text-base font-bold text-white">+35%</p>
+              <p class="text-xs text-slate-400">Ahorro promedio</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
+              </svg>
+            </div>
+            <div class="text-left">
+              <p class="text-base font-bold text-white">98.7%</p>
+              <p class="text-xs text-slate-400">Precisión IA</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+              </svg>
+            </div>
+            <div class="text-left">
+              <p class="text-base font-bold text-white">256-bit</p>
+              <p class="text-xs text-slate-400">Encriptación</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA Principal -->
+        <div class="mt-8 flex flex-col items-center gap-4 w-full">
+          <button
+            id="btn-comenzar"
+            type="button"
+            (click)="onComenzar()"
+            [disabled]="isProcessing() || isSuccess()"
+            class="group relative inline-flex items-center justify-center gap-2 px-10 py-4 rounded-xl text-base font-bold text-white bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 shadow-[0_0_30px_rgba(6,182,212,0.45)] hover:shadow-[0_0_45px_rgba(6,182,212,0.65)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer overflow-hidden disabled:opacity-80 disabled:cursor-not-allowed"
+          >
+            <span class="relative z-10 flex items-center gap-2">
+              @if (isProcessing()) {
+                <svg class="animate-spin h-5 w-5 text-cyan-200" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span>Optimizando Flujos IA...</span>
+              } @else if (isSuccess()) {
+                <span class="text-emerald-200">¡Modelo Sincronizado!</span>
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+              } @else {
+                <span>Comenzar gratis</span>
+                <span class="text-xl transition-transform duration-300 group-hover:translate-x-1">→</span>
+              }
+            </span>
+            <!-- Shimmer -->
+            <div class="absolute top-0 -left-full w-full h-full bg-white/20 skew-x-12 group-hover:animate-[shimmer_1.5s_infinite]"></div>
+          </button>
+
+          <!-- Link login mobile -->
+          <a
+            routerLink="/login"
+            class="sm:hidden text-xs font-medium text-slate-300 hover:text-cyan-300 transition-colors duration-300"
+          >
+            ¿Ya tienes cuenta? <span class="text-cyan-400 font-semibold">Inicia sesión</span>
+          </a>
+
+          <!-- Seguridad -->
+          <div class="flex items-center gap-2 text-xs font-medium text-cyan-400/80 tracking-wide">
+            <svg class="w-4 h-4 text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.5)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <span>Sin tarjeta de crédito · Cancela cuando quieras</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>

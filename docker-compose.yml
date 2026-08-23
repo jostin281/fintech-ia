@@ -1,0 +1,66 @@
+services:
+  # ── Base de datos ──
+  postgres:
+    image: postgres:17-alpine
+    container_name: fintech-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fintech
+    ports:
+      # 5433 en el host (no 5432) para evitar choques con cualquier otro
+      # proceso que ya esté usando el 5432 en tu Windows.
+      - "5433:5432"
+    volumes:
+      - fintech_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fintech"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Backend (NestJS) ──
+  backend:
+    build: ./fintech-back
+    container_name: fintech-backend
+    restart: unless-stopped
+    env_file:
+      - ./fintech-back/.env
+    environment:
+      # Dentro de la red de Docker, Postgres se alcanza por el nombre del
+      # servicio ("postgres") y su puerto INTERNO (5432, no 5433). Esto
+      # sobreescribe el DATABASE_URL del .env, que apunta a localhost:5433
+      # (para cuando corres el backend directo en Windows, sin Docker).
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/fintech?schema=public
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./fintech-back:/app
+      # Estos dos volúmenes con nombre evitan que la carpeta del proyecto
+      # en Windows (bind mount de arriba) tape el node_modules y el cliente
+      # de Prisma ya instalados/generados DENTRO del contenedor Linux.
+      - fintech_back_node_modules:/app/node_modules
+      - fintech_back_prisma_generado:/app/src/generated
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Frontend (Angular) ──
+  frontend:
+    build: ./fintech-frond
+    container_name: fintech-frontend
+    restart: unless-stopped
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./fintech-frond:/app
+      - fintech_frond_node_modules:/app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  fintech_pgdata:
+  fintech_back_node_modules:
+  fintech_back_prisma_generado:
+  fintech_frond_node_modules:

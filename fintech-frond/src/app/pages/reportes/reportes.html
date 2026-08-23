@@ -1,0 +1,253 @@
+<!-- ══════════════════════════════════════════════════════
+     REPORTES FINANCIEROS Y ANALÍTICA
+══════════════════════════════════════════════════════ -->
+<div class="page-root">
+
+  <!-- FONDO ESTÁTICO LIMPIO SIN ANIMACIONES -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <a routerLink="/dashboard" class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+    <div class="header-center">
+      <h1 class="page-title">Reportes & Analítica</h1>
+      <span class="header-badge">Inteligencia de Datos</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" [disabled]="exportando()" (click)="downloadPDF()">
+        📄 Exportar PDF
+      </button>
+      <button class="btn-create" [disabled]="exportando()" (click)="downloadExcel()">
+        📊 Exportar Excel
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="page-main">
+
+    <!-- SELECTOR DE PERIODO DE REPORTES + MINI CALENDARIO (mismo lugar, sin cambiar de pantalla) -->
+    <div class="period-bar">
+      <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Período de Análisis:</span>
+      <div class="period-tabs">
+        <button (click)="setPeriod('semanal')" [class.active]="period() === 'semanal'" class="period-tab">Esta Semana</button>
+        <button (click)="setPeriod('mensual')" [class.active]="period() === 'mensual'" class="period-tab">Este Mes</button>
+        <button (click)="setPeriod('anual')" [class.active]="period() === 'anual'" class="period-tab">Este Año</button>
+
+        <!-- Botón que abre el mini calendario flotante, anclado aquí mismo -->
+        <div class="calendar-anchor">
+          <button
+            type="button"
+            class="period-tab calendar-toggle-tab"
+            [class.active]="period() === 'diario'"
+            (click)="toggleCalendario()"
+          >
+            📅 {{ fechaSeleccionada() ? fechaSeleccionadaCorta() : 'Elegir día' }}
+          </button>
+
+          @if (calendarAbierto()) {
+            <!-- CALENDARIO PEQUEÑO: NAVEGACIÓN POR DÍA, MES Y AÑO -->
+            <div class="calendar-popup">
+              <div class="calendar-nav">
+                <button type="button" class="calendar-title-btn" (click)="subirNivelCalendario()" [disabled]="calendarView() === 'anios'">
+                  {{ calendarLabel() }}
+                  @if (calendarView() !== 'anios') {
+                    <span class="chevron">⌄</span>
+                  }
+                </button>
+                <div class="calendar-nav-arrows">
+                  <button type="button" class="calendar-nav-btn" (click)="navAnterior()" title="Anterior">↑</button>
+                  <button type="button" class="calendar-nav-btn" (click)="navSiguiente()" title="Siguiente">↓</button>
+                </div>
+              </div>
+
+              @if (calendarView() === 'dias') {
+                <div class="calendar-weekdays">
+                  <span>LU</span><span>MA</span><span>MI</span><span>JU</span><span>VI</span><span>SA</span><span>DO</span>
+                </div>
+
+                <div class="calendar-grid">
+                  @for (dia of calendarDays(); track dia.iso) {
+                    <button
+                      type="button"
+                      class="calendar-day"
+                      [class.other-month]="!dia.enMes"
+                      [class.today]="dia.esHoy"
+                      [class.selected]="dia.iso === fechaSeleccionada()"
+                      (click)="seleccionarDia(dia)"
+                    >
+                      {{ dia.numero }}
+                    </button>
+                  }
+                </div>
+              } @else if (calendarView() === 'meses') {
+                <div class="calendar-grid calendar-grid-meses">
+                  @for (mes of calendarMonths(); track mes.indice) {
+                    <button type="button" class="calendar-day calendar-cell-wide" [class.today]="mes.esActual" (click)="seleccionarMes(mes)">
+                      {{ mes.nombreCorto }}
+                    </button>
+                  }
+                </div>
+              } @else {
+                <div class="calendar-grid calendar-grid-anios">
+                  @for (anio of calendarYears(); track anio.anio) {
+                    <button type="button" class="calendar-day calendar-cell-wide" [class.today]="anio.esActual" (click)="seleccionarAnio(anio)">
+                      {{ anio.anio }}
+                    </button>
+                  }
+                </div>
+              }
+
+              <div class="calendar-footer">
+                <button type="button" class="calendar-link ghost" (click)="quitarSeleccion()">Borrar</button>
+                <button type="button" class="calendar-link primary" (click)="irAHoy()">Hoy</button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Fondo transparente: al tocar fuera del calendario, se cierra -->
+    @if (calendarAbierto()) {
+      <div class="calendar-backdrop" (click)="cerrarCalendario()"></div>
+    }
+
+    <!-- KPI SUMMARY GRID -->
+    <div class="kpi-grid">
+      <div class="kpi-card emerald">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+        </div>
+        <div>
+          <p class="kpi-label">Ingresos {{ periodoActualLabel() }}</p>
+          <p class="kpi-value text-emerald-400">+${{ totalIncome() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
+        </div>
+      </div>
+
+      <div class="kpi-card red">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+        </div>
+        <div>
+          <p class="kpi-label">Egresos {{ periodoActualLabel() }}</p>
+          <p class="kpi-value text-slate-200">-${{ totalExpenses() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
+        </div>
+      </div>
+
+      <div class="kpi-card cyan">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <div>
+          <p class="kpi-label">Superávit Neto Generado</p>
+          <p class="kpi-value text-cyan-400">${{ netSavings() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN ANALYTICS CHARTS GRID -->
+    <div class="charts-grid">
+      
+      <!-- BARS CHART: INGRESOS VS EGRESOS MENSALES -->
+      <section class="card chart-card col-span-full xl:col-span-7">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="card-title">Comparativa Ingresos vs Egresos</h2>
+            <p class="text-xs text-slate-400">Evolución mensual de tus finanzas</p>
+          </div>
+          <div class="flex items-center gap-4 text-xs">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> Ingresos</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Egresos</span>
+          </div>
+        </div>
+
+        <!-- Simulated Visual Bar Chart SVG -->
+        <div class="bar-chart-container">
+          @if (cargando()) {
+            <p class="text-xs text-slate-400 p-4">Cargando reporte...</p>
+          } @else if (monthlyTrends().length === 0) {
+            <p class="text-xs text-slate-400 p-4">Sin movimientos en este período todavía.</p>
+          } @else {
+            <div class="bars-flex">
+              @for (m of monthlyTrends(); track m.month) {
+                <div class="bar-group">
+                  <div class="bars-pair">
+                    <!-- Ingreso bar -->
+                    <div class="bar-fill cyan" [style.height.%]="(m.income / maxBarValue()) * 100" [title]="'Ingreso: $' + m.income"></div>
+                    <!-- Egreso bar -->
+                    <div class="bar-fill purple" [style.height.%]="(m.expense / maxBarValue()) * 100" [title]="'Egreso: $' + m.expense"></div>
+                  </div>
+                  <span class="bar-label">{{ m.month }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- DONUT / CATEGORY BREAKDOWN -->
+      <section class="card chart-card col-span-full xl:col-span-5">
+        <div class="mb-4">
+          <h2 class="card-title">Distribución de Gastos</h2>
+          <p class="text-xs text-slate-400">Desglose por categoría del período</p>
+        </div>
+
+        <div class="categories-list">
+          @if (categories().length === 0) {
+            <p class="text-xs text-slate-400 p-4">Sin gastos categorizados en este período.</p>
+          }
+          @for (cat of categories(); track cat.name) {
+            <div class="cat-row">
+              <div class="cat-left">
+                <span class="cat-icon" [style.background-color]="cat.color + '20'">{{ cat.icon }}</span>
+                <div>
+                  <p class="cat-name">{{ cat.name }}</p>
+                  <p class="cat-amt">${{ cat.amount | number:'1.0-2' }} USD</p>
+                </div>
+              </div>
+
+              <div class="cat-right">
+                <span class="cat-pct" [style.color]="cat.color">{{ cat.percentage }}%</span>
+                <div class="cat-bar-bg">
+                  <div class="cat-bar-fill" [style.width.%]="cat.percentage" [style.background-color]="cat.color"></div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- TOAST -->
+  @if (toastMessage()) {
+    <div class="toast-notification">
+      {{ toastMessage() }}
+    </div>
+  }
+
+  <!-- FLOATING IA SAVING TIP CARD -->
+  @if (showTipWidget()) {
+    <div class="floating-tip-card">
+      <div class="tip-header">
+        <div class="flex items-center gap-2">
+          <span class="tip-icon">📊</span>
+          <span class="tip-title">Hack de Analítica IA</span>
+        </div>
+        <button class="btn-close-tip" (click)="showTipWidget.set(false)" title="Cerrar consejo">✕</button>
+      </div>
+      <p class="tip-body">
+        <strong>Previsión de Liquidez:</strong> Compara el ingreso del trimestre contra tus egresos fijos para prever períodos de alta liquidez y realizar abonos extraordinarios a tus metas.
+      </p>
+    </div>
+  }
+
+</div>

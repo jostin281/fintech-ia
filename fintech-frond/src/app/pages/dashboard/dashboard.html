@@ -1,0 +1,764 @@
+<!-- ══════════════════════════════════════════════════════
+     DASHBOARD (REVISED & HYPER-STYLIZED)
+══════════════════════════════════════════════════════ -->
+<div class="app-layout">
+
+  <!-- FONDO ESTÁTICO Y LIMPIO SIN ANIMACIÓN -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- ── SIDEBAR ELEGANTE ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <div class="flex flex-col">
+          <span class="logo-text">Fintech<span class="text-cyan-400">AI</span></span>
+          <span class="text-[10px] text-cyan-400/70 font-semibold tracking-wider uppercase">Plataforma Pro</span>
+        </div>
+      </div>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Principal</div>
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Dashboard</span>
+        <span class="active-indicator"></span>
+      </a>
+      <a routerLink="/movimientos" routerLinkActive="active" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <span>Movimientos</span>
+      </a>
+      <a routerLink="/presupuestos" routerLinkActive="active" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+        <span>Presupuestos</span>
+      </a>
+      <a routerLink="/metas-ahorro" routerLinkActive="active" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        <span>Metas de Ahorro</span>
+      </a>
+
+      <div class="nav-section-title mt-4">Gestión & Reportes</div>
+      <a routerLink="/facturacion-electronica" routerLinkActive="active" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <span>Facturación</span>
+      </a>
+      <a routerLink="/impuestos" routerLinkActive="active" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+        <span>Impuestos</span>
+      </a>
+      <a routerLink="/reportes" routerLinkActive="active" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+        <span>Reportes</span>
+      </a>
+
+      <div class="nav-divider"></div>
+
+      <a routerLink="/asistente-ia" routerLinkActive="active" class="nav-item premium group">
+        <div class="ai-sparkle-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <span class="font-semibold text-purple-200 group-hover:text-white transition-colors">Asistente IA</span>
+        <span class="ai-badge-chip">✦ PRO</span>
+      </a>
+    </nav>
+    
+    <div class="sidebar-footer">
+      <a routerLink="/perfil" class="user-mini-card">
+        <div class="user-avatar-ring">
+          <div class="user-avatar">{{ userInitials() }}</div>
+        </div>
+        <div class="user-info">
+          <p class="user-name">{{ user()?.name || 'Usuario' }}</p>
+          <p class="user-plan">✦ Plan Pro Activo</p>
+        </div>
+      </a>
+      <button class="btn-sidebar-logout" (click)="logout()" title="Cerrar sesión de la cuenta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar Sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── CONTENIDO PRINCIPAL ── -->
+  <main class="main-content">
+    
+    <!-- TOP HEADER BAR -->
+    <header class="top-header">
+      <div class="welcome-heading">
+        <h1 class="text-xl font-bold text-white flex items-center gap-2">
+          ¡Hola, {{ user()?.name?.split(' ')?.[0] || 'Usuario' }}! 
+          <span class="inline-block animate-bounce">👋</span>
+        </h1>
+        <p class="text-xs text-slate-400">Resumen financiero inteligente e indicadores en tiempo real</p>
+      </div>
+
+      <div class="header-right">
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Buscar movimientos, facturas..."/>
+        </div>
+        <div class="header-actions">
+          <a routerLink="/notificaciones" class="action-btn-circle relative" title="Notificaciones">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="notification-ping"></span>
+          </a>
+          <a routerLink="/perfil" class="action-btn-circle" title="Mi Perfil">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </a>
+          <button class="btn-top-logout" (click)="logout()" title="Cerrar Sesión">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Salir</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- DASHBOARD CONTENT GRID -->
+    <div class="dashboard-grid">
+      
+      <!-- HERO BALANCE CARD CON GRÁFICO SVG EN VIVO -->
+      <section class="card balance-card">
+        <div class="balance-card-bg-glow"></div>
+        <div class="balance-top-row">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="shield-badge">
+                <svg class="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                AI Shield Protegido
+              </span>
+              <span class="text-[10px] text-slate-400">· Actualizado en tiempo real</span>
+            </div>
+            <h2 class="card-title text-slate-300">Balance Total Disponible</h2>
+          </div>
+
+          <!-- Currency selector tabs -->
+          <div class="currency-tabs">
+            <button (click)="setCurrency('MXN')" [class.active]="selectedCurrency() === 'MXN'" class="curr-tab">MXN</button>
+            <button (click)="setCurrency('USD')" [class.active]="selectedCurrency() === 'USD'" class="curr-tab">USD</button>
+            <button (click)="setCurrency('EUR')" [class.active]="selectedCurrency() === 'EUR'" class="curr-tab">EUR</button>
+          </div>
+        </div>
+
+        <div class="balance-main-display">
+          <div class="balance-amount">
+            <span class="currency-symbol">$</span>{{ totalBalance() | number:'1.2-2' }}
+            <span class="growth-badge">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              +18.4%
+            </span>
+          </div>
+
+          <!-- Mini SVG Trend Line Graphic -->
+          <div class="trend-chart-wrap">
+            <svg class="w-full h-16" viewBox="0 0 300 60" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,45 Q50,20 100,35 T200,15 T300,5 L300,60 L0,60 Z" fill="url(#chartGrad)" />
+              <path d="M0,45 Q50,20 100,35 T200,15 T300,5" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="300" cy="5" r="4" fill="#22d3ee" class="animate-ping" />
+              <circle cx="300" cy="5" r="4" fill="#22d3ee" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="balance-stats-row">
+          <div class="stat-pill income">
+            <div class="stat-pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div>
+            <div>
+              <p class="stat-label">Ingresos Mensuales</p>
+              <p class="stat-val">+${{ monthlyIncome() | number:'1.2-2' }}</p>
+            </div>
+          </div>
+
+          <div class="stat-pill expense">
+            <div class="stat-pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
+            <div>
+              <p class="stat-label">Gastos Mensuales</p>
+              <p class="stat-val">-${{ monthlyExpenses() | number:'1.2-2' }}</p>
+            </div>
+          </div>
+
+          <div class="stat-pill savings">
+            <div class="stat-pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+            <div>
+              <p class="stat-label">Tasa de Ahorro</p>
+              <p class="stat-val text-cyan-400">{{ savingsRate() }}%</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- QUICK ACTIONS CARD -->
+      <section class="card quick-actions-card">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="card-title flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            Acciones Rápidas
+          </h2>
+          <span class="text-[11px] text-slate-500">Operaciones 1-Click</span>
+        </div>
+        <div class="actions-grid">
+          <button (click)="openTransferModal()" class="quick-btn group cursor-pointer">
+            <div class="icon-wrap cyan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </div>
+            <span>Transferir</span>
+          </button>
+
+          <button (click)="openBillModal()" class="quick-btn group cursor-pointer">
+            <div class="icon-wrap purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            </div>
+            <span>Facturar</span>
+          </button>
+
+          <button (click)="openPayServiceModal()" class="quick-btn group cursor-pointer">
+            <div class="icon-wrap emerald">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10.00 10.00 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <span>Pagar</span>
+          </button>
+
+          <button (click)="openGoalModal()" class="quick-btn group cursor-pointer">
+            <div class="icon-wrap amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <span>Nueva Meta</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- AI INSIGHT CARD (ESTILO GLOWING NEON) -->
+      <section class="card ai-insight-card">
+        <div class="ai-insight-glow"></div>
+        <div class="flex items-center justify-between mb-3">
+          <div class="insight-header">
+            <div class="ai-orb-mini">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div>
+              <h3 class="font-bold text-cyan-300 text-sm">Análisis de la IA</h3>
+              <p class="text-[10px] text-purple-300">Generado automáticamente</p>
+            </div>
+          </div>
+          <a routerLink="/asistente-ia" class="btn-ask-ai">
+            Consultar ✦
+          </a>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed mb-3">
+          "Tus gastos en la categoría <strong class="text-white">Servicios</strong> han disminuido un <strong class="text-emerald-400">12%</strong> respecto al periodo anterior. Proyección de ahorro fin de mes: <strong class="text-cyan-400">$3,420 MXN</strong>."
+        </p>
+        <div class="flex items-center justify-between text-[10px] text-slate-400 border-t border-white/10 pt-2.5">
+        <span>Confianza del modelo: 98.4%</span>
+          <span class="text-purple-300 font-semibold cursor-pointer hover:underline">Ver recomendaciones →</span>
+        </div>
+      </section>
+
+      <!-- RECENT TRANSACTIONS TABLE/LIST -->
+      <section class="card transactions-card col-span-full">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="card-title">Movimientos Recientes</h2>
+            <p class="text-xs text-slate-400">Últimas transacciones registradas</p>
+          </div>
+
+          <!-- Transaction filter tabs -->
+          <div class="flex items-center gap-2">
+            <div class="filter-pills">
+              <button (click)="setTxFilter('todos')" [class.active]="txFilter() === 'todos'" class="filter-pill">Todos</button>
+              <button (click)="setTxFilter('ingreso')" [class.active]="txFilter() === 'ingreso'" class="filter-pill">Ingresos</button>
+              <button (click)="setTxFilter('egreso')" [class.active]="txFilter() === 'egreso'" class="filter-pill">Egresos</button>
+            </div>
+            <a routerLink="/movimientos" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 ml-2">
+              Ver todos <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="tx-list">
+          @for (tx of filteredTransactions; track tx.id) {
+            <div class="tx-item group">
+              <div class="tx-icon">{{ tx.icon }}</div>
+              <div class="tx-info">
+                <div class="flex items-center gap-2">
+                  <p class="tx-concept group-hover:text-cyan-300 transition-colors">{{ tx.concept }}</p>
+                  <span class="status-chip">{{ tx.status }}</span>
+                </div>
+                <p class="tx-date">{{ tx.category }} • {{ tx.date }}</p>
+              </div>
+              <div class="tx-amount" [class.positive]="tx.type === 'ingreso'" [class.negative]="tx.type === 'egreso'">
+                {{ tx.type === 'ingreso' ? '+' : '' }}{{ tx.amount | number:'1.2-2' }} <span class="text-[10px] opacity-70">MXN</span>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- METAS DE AHORRO MINI WIDGET -->
+      <section class="card goals-card col-span-full">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="card-title">Metas de Ahorro Destacadas</h2>
+            <p class="text-xs text-slate-400">Progreso general hacia tus objetivos</p>
+          </div>
+          <a routerLink="/metas-ahorro" class="text-xs text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1">
+            Gestionar <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
+        </div>
+
+        <div class="goals-grid">
+          @for (goal of savingsGoals(); track goal.name) {
+            <div class="goal-item">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">{{ goal.icon }}</span>
+                  <span class="text-xs font-bold text-white">{{ goal.name }}</span>
+                </div>
+                <span class="text-xs font-semibold text-slate-300">
+                  ${{ goal.current | number:'1.0-0' }} / ${{ goal.target | number:'1.0-0' }}
+                </span>
+              </div>
+              
+              <!-- Progress Bar -->
+              <div class="goal-bar-bg">
+                <div class="goal-bar-fill" 
+                     [style.width.%]="(goal.current / goal.target) * 100"
+                     [style.background-color]="goal.color"></div>
+              </div>
+              <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>{{ ((goal.current / goal.target) * 100) | number:'1.0-0' }}% completado</span>
+                <span>Faltan ${{ (goal.target - goal.current) | number:'1.0-0' }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- MODAL DE ALERTA DE INICIO DE SESIÓN CON DATOS REALES -->
+  @if (showLoginAlertModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
+      <div class="relative w-full max-w-md rounded-3xl bg-slate-900/95 border p-6 shadow-[0_0_50px_rgba(0,0,0,0.5)] text-white"
+           [class.border-red-500/40]="hasRedAlerts()"
+           [class.border-cyan-500/40]="!hasRedAlerts()">
+        
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl font-bold"
+                 [class.bg-red-500/20]="hasRedAlerts()"
+                 [class.text-red-400]="hasRedAlerts()"
+                 [class.border]="hasRedAlerts()"
+                 [class.border-red-500/40]="hasRedAlerts()"
+                 [class.bg-cyan-500/20]="!hasRedAlerts()"
+                 [class.text-cyan-400]="!hasRedAlerts()"
+                 [class.border-cyan-500/40]="!hasRedAlerts()">
+              {{ hasRedAlerts() ? '🚨' : '🔔' }}
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                {{ hasRedAlerts() ? 'Alerta de Control Financiero' : 'Resumen de Inicio de Sesión' }}
+              </h3>
+              <p class="text-[11px] text-slate-400">Estado de tu cuenta al ingresar</p>
+            </div>
+          </div>
+          <button (click)="closeLoginAlertModal()" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">✕</button>
+        </div>
+
+        @if (hasRedAlerts()) {
+          <div class="flex flex-col gap-3">
+            <div class="p-3.5 rounded-2xl bg-red-950/40 border border-red-500/30 text-red-200 text-xs leading-relaxed">
+              <p class="font-bold text-red-400 flex items-center gap-1.5 mb-1 text-sm">
+                <span>⚠️</span> Tienes gastos o notificaciones en rojo
+              </p>
+              <p class="text-slate-300 text-[11px]">
+                Se han detectado presupuestos que superaron el límite establecido o alertas críticas pendientes:
+              </p>
+            </div>
+
+            <!-- Lista de presupuestos en rojo -->
+            @if (exceededBudgets().length > 0) {
+              <div class="space-y-2">
+                <p class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Presupuestos Excedidos:</p>
+                @for (b of exceededBudgets(); track b.id) {
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/70 border border-red-500/30">
+                    <div class="flex items-center gap-2.5">
+                      <span class="text-base">{{ b.icon }}</span>
+                      <div>
+                        <p class="text-xs font-bold text-white">{{ b.category }}</p>
+                        <p class="text-[10px] text-red-400 font-semibold">Gastado: ${{ b.spent | number:'1.2-2' }} / Límite: ${{ b.limit | number:'1.2-2' }}</p>
+                      </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] font-bold">EXCEDIDO</span>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Notificaciones críticas -->
+            @if (criticalNotifications().length > 0) {
+              <div class="space-y-2">
+                <p class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Notificaciones Críticas:</p>
+                @for (n of criticalNotifications(); track n.id) {
+                  <div class="p-3 rounded-xl bg-slate-950/70 border border-amber-500/30">
+                    <p class="text-xs font-bold text-amber-300 flex items-center gap-1">
+                      <span>🛑</span> {{ n.title }}
+                    </p>
+                    <p class="text-[11px] text-slate-300 mt-0.5">{{ n.body }}</p>
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="flex items-center gap-3 pt-3">
+              <button (click)="closeLoginAlertModal()" class="flex-1 py-2.5 rounded-xl border border-white/10 text-xs font-medium text-slate-300 hover:bg-white/5 transition-all cursor-pointer">
+                Entendido
+              </button>
+              <a routerLink="/presupuestos" (click)="closeLoginAlertModal()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-xs font-bold text-white text-center shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all cursor-pointer">
+                Ver Presupuestos 🚀
+              </a>
+            </div>
+          </div>
+        } @else {
+          <div class="flex flex-col gap-4 py-2">
+            <div class="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 text-xs leading-relaxed text-center">
+              <span class="text-3xl block mb-2">✨</span>
+              <p class="font-bold text-white text-sm mb-1">¡Tus finanzas están al día!</p>
+              <p class="text-slate-300 text-[11px]">
+                No tienes presupuestos excedidos ni alertas en rojo sin leer al ingresar a tu cuenta.
+              </p>
+            </div>
+
+            <div class="flex justify-end pt-1">
+              <button (click)="closeLoginAlertModal()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-xs font-bold text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all cursor-pointer">
+                Continuar al Dashboard
+              </button>
+            </div>
+          </div>
+        }
+
+      </div>
+    </div>
+  }
+
+  <!-- FLOATING IA SAVING TIP CARD -->
+  @if (showTipWidget()) {
+    <div class="floating-tip-card">
+      <div class="tip-header">
+        <div class="flex items-center gap-2">
+          <span class="tip-icon">💡</span>
+          <span class="tip-title">Consejo de Ahorro 50/30/20</span>
+        </div>
+        <button class="btn-close-tip" (click)="showTipWidget.set(false)" title="Cerrar consejo">✕</button>
+      </div>
+      <p class="tip-body">
+        <strong>Fórmula de Éxito:</strong> Destina el 50% de tus ingresos a necesidades básicas, 30% a estilo de vida y el 20% obligatoriamente a tu fondo de ahorro o inversión.
+      </p>
+    </div>
+  }
+
+  <!-- TOAST NOTIFICATION -->
+  @if (toastMessage()) {
+    <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-slate-900/90 border border-cyan-500/40 text-cyan-200 text-xs font-semibold shadow-[0_0_30px_rgba(6,182,212,0.3)] backdrop-blur-xl animate-bounce">
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- MODAL 1: TRANSFERIR (BANCOS ECUADOR 🇪🇨) -->
+  @if (showTransferModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
+      <div class="relative w-full max-w-md rounded-3xl bg-slate-900/90 border border-cyan-500/30 p-6 shadow-[0_0_40px_rgba(6,182,212,0.25)] text-white">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold">🏦</div>
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-1.5">
+                Transferencia SPI Ecuador 🇪🇨
+              </h3>
+              <p class="text-[11px] text-slate-400">Transferencias interbancarias directas SPI</p>
+            </div>
+          </div>
+          <button (click)="showTransferModal.set(false)" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">✕</button>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Banco / Cooperativa de Ecuador</label>
+            <select [value]="transferBank()" (change)="transferBank.set($any($event.target).value)"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white focus:border-cyan-400 outline-none transition-all">
+              <option value="Banco Pichincha">🏦 Banco Pichincha</option>
+              <option value="Banco Guayaquil">🏦 Banco Guayaquil</option>
+              <option value="Banco del Pacífico">🏦 Banco del Pacífico</option>
+              <option value="Produbanco">🏦 Produbanco / Promerica</option>
+              <option value="Banco Internacional">🏦 Banco Internacional</option>
+              <option value="Banco Bolivariano">🏦 Banco Bolivariano</option>
+              <option value="Cooperativa JEP">🏦 Cooperativa JEP</option>
+              <option value="Cooperativa Policia Nacional">🏦 Coop. Policía Nacional</option>
+              <option value="Cooperativa Andalucía">🏦 Cooperativa Andalucía</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Tipo de Cuenta</label>
+              <select [value]="transferAccountType()" (change)="transferAccountType.set($any($event.target).value)"
+                class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-3 py-2 text-xs text-white focus:border-cyan-400 outline-none">
+                <option value="Cuenta Ahorros">Ahorros</option>
+                <option value="Cuenta Corriente">Corriente</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Cédula / RUC Titular</label>
+              <input type="text" [value]="transferIdNum()" (input)="transferIdNum.set($any($event.target).value)" placeholder="1712345678"
+                class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-cyan-400 outline-none"/>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Beneficiario / Nombre Titular</label>
+            <input type="text" [value]="transferRecipient()" (input)="transferRecipient.set($any($event.target).value)" placeholder="Ej. Juan Carlos Andrade o Empresa S.A."
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-cyan-400 outline-none transition-all"/>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Monto ($ USD Ecuador)</label>
+            <input type="number" [value]="transferAmount()" (input)="transferAmount.set($any($event.target).value ? +$any($event.target).value : null)" placeholder="0.00"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-cyan-400 outline-none transition-all"/>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+            <span>Red Bancaria:</span>
+            <span class="font-bold text-cyan-400">Sistema SPI BCE Ecuador 🇪🇨</span>
+          </div>
+
+          @if (transferSummary()) {
+            <div class="flex items-start gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/30 px-3 py-2.5 text-[11px] text-cyan-200 leading-relaxed animate-fade-in">
+              <span class="text-sm flex-shrink-0">🧭</span>
+              <span>{{ transferSummary() }}</span>
+            </div>
+          }
+
+          <div class="flex items-center gap-3 pt-2">
+            <button (click)="showTransferModal.set(false)" class="flex-1 py-2 rounded-xl border border-white/10 text-xs font-medium text-slate-300 hover:bg-white/5 transition-all">Cancelar</button>
+            <button (click)="executeTransfer()" [disabled]="isSubmittingAction()" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-xs font-bold text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{{ isSubmittingAction() ? 'Enviando...' : 'Transferir SPI 🚀' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL 2: FACTURAR (SRI ECUADOR 🇪🇨) -->
+  @if (showBillModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
+      <div class="relative w-full max-w-md rounded-3xl bg-slate-900/90 border border-purple-500/30 p-6 shadow-[0_0_40px_rgba(168,85,247,0.25)] text-white">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 font-bold">🧾</div>
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-1.5">
+                Facturación Electrónica SRI 🇪🇨
+              </h3>
+              <p class="text-[11px] text-slate-400">Emisión directa y firma con la normativa del SRI</p>
+            </div>
+          </div>
+          <button (click)="showBillModal.set(false)" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">✕</button>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <!-- Botones rápidos de clientes Ecuador -->
+          <div>
+            <label class="block text-[11px] font-medium text-slate-400 mb-1.5">Clientes / RUCs Frecuentes Ecuador:</label>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" (click)="selectEcuadorClient({ name: 'Corporación Favorita C.A.', ruc: '1790016919001' })"
+                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-purple-500/20 border border-white/10 text-[10px] text-slate-300 cursor-pointer transition-all">🏢 Favorita</button>
+              <button type="button" (click)="selectEcuadorClient({ name: 'Tiendas TIA S.A.', ruc: '0990011700001' })"
+                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-purple-500/20 border border-white/10 text-[10px] text-slate-300 cursor-pointer transition-all">🏢 TIA S.A.</button>
+              <button type="button" (click)="selectEcuadorClient({ name: 'Pronaca S.A.', ruc: '179004123001' })"
+                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-purple-500/20 border border-white/10 text-[10px] text-slate-300 cursor-pointer transition-all">🏢 Pronaca</button>
+              <button type="button" (click)="selectEcuadorClient({ name: 'Consumidor Final', ruc: '9999999999999' })"
+                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-purple-500/20 border border-white/10 text-[10px] text-slate-300 cursor-pointer transition-all">👤 Consumidor Final</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Razon Social / Nombre Cliente</label>
+            <input type="text" [value]="billClient()" (input)="billClient.set($any($event.target).value)" placeholder="Nombre del cliente o empresa ecuatoriana"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-purple-400 outline-none transition-all"/>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">RUC o Cédula Ecuador (13 ó 10 dígitos)</label>
+            <input type="text" [value]="billRuc()" (input)="billRuc.set($any($event.target).value)" placeholder="1790016919001"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-purple-400 outline-none transition-all"/>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Monto Total ($ USD Ecuador)</label>
+            <input type="number" [value]="billAmount()" (input)="billAmount.set($any($event.target).value ? +$any($event.target).value : null)" placeholder="0.00"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-purple-400 outline-none transition-all"/>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+            <span>Esquema Fiscal SRI:</span>
+            <span class="font-bold text-purple-400">15% IVA Ecuador (Ley SRI 2026)</span>
+          </div>
+
+          @if (billSummary()) {
+            <div class="flex items-start gap-2 rounded-xl border border-purple-500/30 bg-purple-950/30 px-3 py-2.5 text-[11px] text-purple-200 leading-relaxed animate-fade-in">
+              <span class="text-sm flex-shrink-0">🧭</span>
+              <span>{{ billSummary() }}</span>
+            </div>
+          }
+
+          <div class="flex items-center gap-3 pt-2">
+            <button (click)="showBillModal.set(false)" class="flex-1 py-2 rounded-xl border border-white/10 text-xs font-medium text-slate-300 hover:bg-white/5 transition-all">Cancelar</button>
+            <button (click)="executeBilling()" [disabled]="isSubmittingAction()" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-xs font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{{ isSubmittingAction() ? 'Enviando...' : 'Autorizar SRI 🇪🇨' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL 3: PAGAR (SERVICIOS Y BANCOS ECUADOR 🇪🇨) -->
+  @if (showPayServiceModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
+      <div class="relative w-full max-w-md rounded-3xl bg-slate-900/90 border border-emerald-500/30 p-6 shadow-[0_0_40px_rgba(16,185,129,0.25)] text-white">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold">⚡</div>
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-1.5">
+                Pago de Servicios Ecuador 🇪🇨
+              </h3>
+              <p class="text-[11px] text-slate-400">Luz, agua, internet, IESS o tarjetas de Ecuador</p>
+            </div>
+          </div>
+          <button (click)="showPayServiceModal.set(false)" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">✕</button>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Empresa / Entidad de Ecuador</label>
+            <select [value]="payEcuadorService()" (change)="payEcuadorService.set($any($event.target).value)"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white focus:border-emerald-400 outline-none transition-all">
+              <option value="⚡ EEQ - Empresa Eléctrica Quito">⚡ EEQ - Empresa Eléctrica Quito</option>
+              <option value="⚡ CNEL EP - Empresa Eléctrica Ecuador">⚡ CNEL EP - Energía Eléctrica Ecuador</option>
+              <option value="💧 EPMAPS - Agua Potable Quito">💧 EPMAPS - Agua Potable Quito</option>
+              <option value="💧 Interagua - Agua Potable Guayaquil">💧 Interagua - Agua Potable Guayaquil</option>
+              <option value="📶 CNT EP - Telecomunicaciones Ecuador">📶 CNT EP - Internet / Telefonía</option>
+              <option value="📱 Claro Ecuador (CONECEL)">📱 Claro Ecuador (Plan Postpago)</option>
+              <option value="📱 Movistar Ecuador (OTECEL)">📱 Movistar Ecuador (Plan Postpago)</option>
+              <option value="🏛️ IESS - Planillaje Patronal & Aportes">🏛️ IESS - Planillaje & Aportes</option>
+              <option value="🏛️ SRI - Impuesto Vehicular / Renta">🏛️ SRI - Matriculación / Impuestos</option>
+              <option value="💳 Tarjeta Banco Pichincha / Guayaquil">💳 Tarjeta de Crédito Banco Ecuador</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">N° Contrato / Cuenta / Referencia</label>
+            <input type="text" [value]="payContractRef()" (input)="payContractRef.set($any($event.target).value)" placeholder="Ej. 1000847291"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-emerald-400 outline-none transition-all"/>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Monto a Pagar ($ USD)</label>
+            <input type="number" [value]="payAmount()" (input)="payAmount.set($any($event.target).value ? +$any($event.target).value : null)" placeholder="0.00"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-emerald-400 outline-none transition-all"/>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+            <span>Comisión Convenio:</span>
+            <span class="font-bold text-emerald-400">$0.00 USD (Convenio Directo ECU)</span>
+          </div>
+
+          @if (paySummary()) {
+            <div class="flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-3 py-2.5 text-[11px] text-emerald-200 leading-relaxed animate-fade-in">
+              <span class="text-sm flex-shrink-0">🧭</span>
+              <span>{{ paySummary() }}</span>
+            </div>
+          }
+
+          <div class="flex items-center gap-3 pt-2">
+            <button (click)="showPayServiceModal.set(false)" class="flex-1 py-2 rounded-xl border border-white/10 text-xs font-medium text-slate-300 hover:bg-white/5 transition-all">Cancelar</button>
+            <button (click)="executePayService()" [disabled]="isSubmittingAction()" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-xs font-bold text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{{ isSubmittingAction() ? 'Enviando...' : 'Pagar Servicio 💳' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL 4: NUEVA META (OBJETIVOS ECUADOR 🇪🇨) -->
+  @if (showGoalModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
+      <div class="relative w-full max-w-md rounded-3xl bg-slate-900/90 border border-amber-500/30 p-6 shadow-[0_0_40px_rgba(245,158,11,0.25)] text-white">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold">🎯</div>
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-1.5">
+                Meta de Ahorro Ecuador 🇪🇨
+              </h3>
+              <p class="text-[11px] text-slate-400">Objetivo financiero para proyectos en Ecuador</p>
+            </div>
+          </div>
+          <button (click)="showGoalModal.set(false)" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">✕</button>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Categoría Frecuente en Ecuador</label>
+            <select [value]="goalCategoryEcuador()" (change)="goalCategoryEcuador.set($any($event.target).value)"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white focus:border-amber-400 outline-none transition-all">
+              <option value="🏠 Entrada Vivienda (Biess/Banco)">🏠 Entrada para Vivienda (Biess / Banco Pichincha)</option>
+              <option value="🚗 Enganche Vehículo (Chevrolet/Toyota ECU)">🚗 Enganche Vehículo (Chevrolet, Toyota Ecuador)</option>
+              <option value="🎓 Universidad / Posgrado ECU">🎓 Fondo Universidad / Posgrado (USFQ, PUCE, ESPOL)</option>
+              <option value="🏖️ Vacaciones Galápagos / Manabí">🏖️ Viaje Galápagos & Turismo Nacional</option>
+              <option value="🛡️ Fondo de Emergencia PYME ECU">🛡️ Fondo de Emergencia Empresa Ecuador</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Nombre Personalizado (Opcional)</label>
+            <input type="text" [value]="goalName()" (input)="goalName.set($any($event.target).value)" placeholder="Ej: Departamento en Quito o Casa Cumbayá"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-amber-400 outline-none transition-all"/>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Monto Objetivo ($ USD Ecuador)</label>
+            <input type="number" [value]="goalTarget()" (input)="goalTarget.set($any($event.target).value ? +$any($event.target).value : null)" placeholder="10000.00"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-amber-400 outline-none transition-all"/>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Abono Inicial ($ USD)</label>
+            <input type="number" [value]="goalInitial()" (input)="goalInitial.set($any($event.target).value ? +$any($event.target).value : null)" placeholder="0.00"
+              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-amber-400 outline-none transition-all"/>
+          </div>
+
+          @if (goalSummary()) {
+            <div class="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-950/30 px-3 py-2.5 text-[11px] text-amber-200 leading-relaxed animate-fade-in">
+              <span class="text-sm flex-shrink-0">🧭</span>
+              <span>{{ goalSummary() }}</span>
+            </div>
+          }
+
+          <div class="flex items-center gap-3 pt-2">
+            <button (click)="showGoalModal.set(false)" class="flex-1 py-2 rounded-xl border border-white/10 text-xs font-medium text-slate-300 hover:bg-white/5 transition-all">Cancelar</button>
+            <button (click)="executeCreateGoal()" [disabled]="isSubmittingAction()" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-xs font-bold text-white shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{{ isSubmittingAction() ? 'Enviando...' : 'Crear Meta ⭐' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

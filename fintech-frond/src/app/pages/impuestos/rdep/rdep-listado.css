@@ -1,0 +1,234 @@
+/* ══════════════════════════════════════════════════════
+   LISTADO FORMULARIO 107 / RDEP — misma estética "cyber-
+   fintech glassmorphism neon" del resto de Impuestos.
+══════════════════════════════════════════════════════ */
+
+.rdep-listado {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 0.92rem;
+  color: #cbd5e1;
+}
+
+.rdep-listado-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: 4px;
+}
+
+.rdep-listado-encabezado h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+/* Botón "Nuevo período": mismo degradado con brillo que .btn-create. */
+.rdep-listado-encabezado ::ng-deep .mat-mdc-unelevated-button {
+  --mdc-filled-button-container-height: 36px;
+  font-size: 0.82rem;
+  padding: 0 16px !important;
+  border-radius: 9px !important;
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%) !important;
+  color: #030712 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.rdep-listado-encabezado ::ng-deep .mat-mdc-unelevated-button:hover {
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
+}
+
+.rdep-listado-cargando {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.rdep-listado-vacio {
+  padding: 28px 16px;
+  text-align: center;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
+
+.rdep-listado-mensaje {
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+
+/* Chips de estado, mismos tonos que .badge-status-* de impuestos.css. */
+.chip-borrador,
+.chip-validado,
+.chip-generado {
+  font-weight: 700 !important;
+}
+
+.chip-borrador {
+  background: rgba(148, 163, 184, 0.15) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.chip-validado {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.chip-generado {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+/* Tabla de cristal oscuro, igual que .table-container del resto de la app. */
+.rdep-tabla {
+  width: 100%;
+  background-color: rgba(15, 23, 42, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.rdep-tabla ::ng-deep .mat-mdc-header-row,
+.rdep-tabla ::ng-deep .mat-mdc-row {
+  background-color: transparent;
+}
+
+.rdep-tabla ::ng-deep .mat-mdc-row:hover {
+  background-color: rgba(0, 242, 254, 0.04);
+}
+
+.rdep-tabla ::ng-deep .mat-mdc-header-row {
+  background-color: rgba(15, 23, 42, 0.9);
+}
+
+.rdep-tabla ::ng-deep .mat-mdc-row,
+.rdep-tabla ::ng-deep .mat-mdc-header-row {
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.rdep-tabla ::ng-deep .mat-mdc-header-cell {
+  color: #94a3b8 !important;
+  padding: 10px 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rdep-tabla ::ng-deep .mat-mdc-cell {
+  color: #e2e8f0 !important;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+}
+
+.rdep-tabla ::ng-deep .mat-mdc-icon-button {
+  --mdc-icon-button-state-layer-size: 36px;
+  color: #94a3b8 !important;
+  padding: 6px;
+  transition: color 0.2s;
+}
+
+.rdep-tabla ::ng-deep .mat-mdc-icon-button:hover {
+  color: #00f2fe !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   MODO CLARO (".theme-light", agregada por ThemeService a
+   <html>/<body> con el interruptor global de la app): mismos
+   componentes de arriba, pero con la paleta clara/blanca del
+   resto de las pantallas en modo claro (ver styles.css).
+══════════════════════════════════════════════════════ */
+
+.theme-light .rdep-listado-encabezado h3 {
+  color: #0f172a;
+}
+
+.theme-light .rdep-listado-encabezado ::ng-deep .mat-mdc-unelevated-button {
+  background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+}
+
+.theme-light .rdep-listado-encabezado ::ng-deep .mat-mdc-unelevated-button:hover {
+  box-shadow: 0 8px 26px rgba(37, 99, 235, 0.45);
+}
+
+.theme-light .rdep-listado-vacio {
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+.theme-light .rdep-listado-mensaje {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.theme-light .chip-borrador {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1;
+}
+
+.theme-light .chip-validado {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a;
+}
+
+.theme-light .chip-generado {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0;
+}
+
+.theme-light .rdep-tabla {
+  background-color: #ffffff !important;
+  border: 1px solid #dbeafe;
+}
+
+.theme-light .rdep-tabla ::ng-deep .mat-mdc-row:hover {
+  background-color: #f0f7ff;
+}
+
+.theme-light .rdep-tabla ::ng-deep .mat-mdc-header-row {
+  background-color: #eff6ff;
+}
+
+.theme-light .rdep-tabla ::ng-deep .mat-mdc-row,
+.theme-light .rdep-tabla ::ng-deep .mat-mdc-header-row {
+  border-bottom-color: #f1f5f9 !important;
+}
+
+.theme-light .rdep-tabla ::ng-deep .mat-mdc-header-cell {
+  color: #1e3a8a !important;
+}
+
+.theme-light .rdep-tabla ::ng-deep .mat-mdc-cell {
+  color: #1e293b !important;
+}
+
+.theme-light .rdep-tabla ::ng-deep .mat-mdc-icon-button {
+  color: #64748b !important;
+}
+
+.theme-light .rdep-tabla ::ng-deep .mat-mdc-icon-button:hover {
+  color: #2563eb !important;
+}

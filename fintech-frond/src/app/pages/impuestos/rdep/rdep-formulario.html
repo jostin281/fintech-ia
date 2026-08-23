@@ -1,0 +1,442 @@
+<div class="rdep-formulario">
+  @if (cargando()) {
+    <div class="rdep-cargando">
+      <mat-spinner diameter="32"></mat-spinner>
+      <span>Cargando...</span>
+    </div>
+  } @else {
+    <div class="rdep-encabezado">
+      <h3>{{ esNuevo() ? 'Nuevo Formulario 107 / RDEP' : 'Editar Formulario 107 / RDEP' }}</h3>
+      <mat-chip-set>
+        @switch (estado()) {
+          @case ('BORRADOR') {
+            <mat-chip class="chip-borrador">Borrador</mat-chip>
+          }
+          @case ('VALIDADO') {
+            <mat-chip class="chip-validado">Validado</mat-chip>
+          }
+          @case ('GENERADO') {
+            <mat-chip class="chip-generado">Generado</mat-chip>
+          }
+        }
+      </mat-chip-set>
+    </div>
+
+    @if (esSoloLectura()) {
+      <p class="rdep-aviso">
+        <mat-icon>lock</mat-icon>
+        Este formulario ya fue generado y queda de solo lectura. Los valores se conservan para trazabilidad.
+      </p>
+    }
+
+    @if (esNuevo()) {
+      <!-- Panel de autocompletar: mismo estilo que el Formulario 104 -->
+      <div class="rdep-autocomplete-panel">
+        <div class="rdep-autocomplete-header">
+          <mat-icon class="rdep-autocomplete-icon">auto_fix_high</mat-icon>
+          <span class="rdep-autocomplete-title">✨ Autocompletar formulario</span>
+          <span class="rdep-autocomplete-hint">Rellena los campos automáticamente con tus datos ya registrados en Fintech</span>
+        </div>
+        <div class="rdep-autocomplete-actions">
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            [disabled]="cargandoPlantilla()"
+            (click)="cargarUltimoPeriodo()"
+            class="rdep-btn-autocomplete"
+          >
+            <mat-icon>{{ cargandoPlantilla() ? 'hourglass_empty' : 'content_copy' }}</mat-icon>
+            {{ cargandoPlantilla() ? '⏳ Cargando...' : '📋 Copiar último período registrado' }}
+          </button>
+          <span class="rdep-autocomplete-sep">—</span>
+          <span class="rdep-autocomplete-desc">
+            Copia sueldos, gastos personales e identificación del período anterior y solo corrige lo que cambió.
+          </span>
+        </div>
+      </div>
+    }
+
+    @if (mensaje()) {
+      <p class="rdep-mensaje" [class.rdep-mensaje-error]="mensajeEsError()">{{ mensaje() }}</p>
+    }
+
+    <form [formGroup]="form" class="rdep-form">
+      <!-- ── Identificación ── -->
+      <mat-card class="rdep-seccion">
+        <mat-card-header><mat-card-title>Período y empleador</mat-card-title></mat-card-header>
+        <mat-card-content class="rdep-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Período fiscal (año)</mat-label>
+            <input matInput type="number" formControlName="periodoFiscal" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Tipo de empleador</mat-label>
+            <mat-select formControlName="tipoEmpleador">
+              @for (op of catalogos()?.tipoEmpleador; track op.valor) {
+                <mat-option [value]="op.valor">{{ op.etiqueta }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Ente de seguridad social</mat-label>
+            <mat-select formControlName="enteSeguridadSocial">
+              @for (op of catalogos()?.enteSeguridadSocial; track op.valor) {
+                <mat-option [value]="op.valor">{{ op.etiqueta }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="rdep-seccion">
+        <mat-card-header><mat-card-title>Identificación del trabajador</mat-card-title></mat-card-header>
+        <mat-card-content class="rdep-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Tipo de identificación</mat-label>
+            <mat-select formControlName="tipoIdentificacionTrabajador">
+              @for (op of catalogos()?.tiposIdentificacionTrabajador; track op.valor) {
+                <mat-option [value]="op.valor">{{ op.etiqueta }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Número de identificación</mat-label>
+            <input matInput formControlName="numeroIdentificacionTrabajador" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Apellidos</mat-label>
+            <input matInput formControlName="apellidosTrabajador" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Nombres</mat-label>
+            <input matInput formControlName="nombresTrabajador" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Código de establecimiento</mat-label>
+            <input matInput formControlName="codigoEstablecimiento" maxlength="3" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Residencia</mat-label>
+            <mat-select formControlName="residenciaTrabajador">
+              @for (op of catalogos()?.residenciaTrabajador; track op.valor) {
+                <mat-option [value]="op.valor">{{ op.etiqueta }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>País de residencia</mat-label>
+            <mat-select formControlName="paisResidenciaTrabajador">
+              @for (pais of catalogos()?.paises; track pais.codigo) {
+                <mat-option [value]="pais.codigo">{{ pais.nombre }} ({{ pais.codigo }})</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Convenio doble imposición</mat-label>
+            <mat-select formControlName="aplicaConvenioDobleImposicion">
+              @for (op of catalogos()?.convenioDobleImposicion; track op.valor) {
+                <mat-option [value]="op.valor">{{ op.etiqueta }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Condición de discapacidad</mat-label>
+            <mat-select formControlName="condicionDiscapacidad">
+              @for (op of catalogos()?.condicionDiscapacidad; track op.valor) {
+                <mat-option [value]="op.valor">{{ op.etiqueta }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          @if (form.value.condicionDiscapacidad !== 'NO_APLICA') {
+            <mat-form-field appearance="outline">
+              <mat-label>Porcentaje de discapacidad</mat-label>
+              <input matInput type="number" formControlName="porcentajeDiscapacidad" min="1" max="100" />
+            </mat-form-field>
+          }
+
+          <mat-form-field appearance="outline">
+            <mat-label>Cargas familiares</mat-label>
+            <mat-select formControlName="cargasFamiliares">
+              @for (op of catalogos()?.cargasFamiliares; track op.valor) {
+                <mat-option [value]="+op.valor">{{ op.etiqueta }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-checkbox formControlName="beneficioGalapagos">Beneficio provincia de Galápagos</mat-checkbox>
+          <mat-checkbox formControlName="enfermedadCatastrofica">
+            Con enfermedad catastrófica, rara o huérfana
+          </mat-checkbox>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- ── Ingresos ── -->
+      <mat-card class="rdep-seccion">
+        <mat-card-header><mat-card-title>Ingresos</mat-card-title></mat-card-header>
+        <mat-card-content class="rdep-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 301 · Sueldos y salarios</mat-label>
+            <input matInput type="number" formControlName="sueldosSalariosIngresosGravados" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 303 · Otros ingresos gravados</mat-label>
+            <input matInput type="number" formControlName="otrosIngresosGravados" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 305 · Participación de utilidades</mat-label>
+            <input matInput type="number" formControlName="participacionUtilidades" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 307 · Ingresos con otros empleadores</mat-label>
+            <input matInput type="number" formControlName="ingresosOtrosEmpleadores" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 311 · Décimo tercer sueldo (exento)</mat-label>
+            <input matInput type="number" formControlName="decimoTercerSueldo" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 313 · Décimo cuarto sueldo (exento)</mat-label>
+            <input matInput type="number" formControlName="decimoCuartoSueldo" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 315 · Fondo de reserva (exento)</mat-label>
+            <input matInput type="number" formControlName="fondoReserva" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 317 · Otros ingresos no gravados</mat-label>
+            <input matInput type="number" formControlName="otrosIngresosNoGravados" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 381 · Impuesto asumido por el empleador</mat-label>
+            <input matInput type="number" formControlName="impuestoRentaAsumidoEmpleador" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- ── Deducciones / gastos personales ── -->
+      <mat-card class="rdep-seccion">
+        <mat-card-header><mat-card-title>Aportes y gastos personales</mat-card-title></mat-card-header>
+        <mat-card-content class="rdep-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Sistema de salario neto</mat-label>
+            <mat-select formControlName="sistemaSalarioNeto">
+              @for (op of catalogos()?.sistemaSalarioNeto; track op.valor) {
+                <mat-option [value]="op.valor">{{ op.etiqueta }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 351 · Aporte IESS con este empleador</mat-label>
+            <input matInput type="number" formControlName="aportePersonalEsteEmpleador" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 353 · Aporte IESS con otros empleadores</mat-label>
+            <input matInput type="number" formControlName="aportePersonalOtrosEmpleadores" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 361 · Vivienda</mat-label>
+            <input matInput type="number" formControlName="gastoVivienda" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 362 · Turismo</mat-label>
+            <input matInput type="number" formControlName="gastoTurismo" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 363 · Salud</mat-label>
+            <input matInput type="number" formControlName="gastoSalud" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 365 · Educación, arte y cultura</mat-label>
+            <input matInput type="number" formControlName="gastoEducacion" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 367 · Alimentación</mat-label>
+            <input matInput type="number" formControlName="gastoAlimentacion" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 369 · Vestimenta</mat-label>
+            <input matInput type="number" formControlName="gastoVestimenta" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 371 · Exoneración por discapacidad</mat-label>
+            <input matInput type="number" formControlName="exoneracionDiscapacidad" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 373 · Exoneración por tercera edad</mat-label>
+            <input matInput type="number" formControlName="exoneracionTerceraEdad" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 404 · Retenido/asumido por otros empleadores</mat-label>
+            <input matInput type="number" formControlName="impuestoRetenidoAsumidoOtrosEmpleadores" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Casillero 405 · Asumido por este empleador</mat-label>
+            <input matInput type="number" formControlName="impuestoAsumidoEsteEmpleador" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline" matTooltip="Publicada por el INEC en diciembre del período. No se calcula automáticamente.">
+            <mat-label>Canasta Familiar Básica (diciembre)</mat-label>
+            <input matInput type="number" formControlName="canastaBasicaMensual" />
+            <span matTextSuffix>USD</span>
+          </mat-form-field>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- ── Resumen calculado por el backend ── -->
+      @if (formularioActual(); as f) {
+        <mat-card class="rdep-seccion rdep-resumen">
+          <mat-card-header><mat-card-title>Resumen impositivo (calculado automáticamente)</mat-card-title></mat-card-header>
+          <mat-card-content class="rdep-grid">
+            <div class="rdep-resumen-item">
+              <span>Casillero 399 · Base imponible gravada</span>
+              <strong>{{ f.baseImponibleGravada | number: '1.2-2' }} USD</strong>
+            </div>
+            <div class="rdep-resumen-item">
+              <span>Casillero 401 · Impuesto a la renta causado</span>
+              <strong>{{ f.impuestoRentaCausado | number: '1.2-2' }} USD</strong>
+            </div>
+            <div class="rdep-resumen-item">
+              <span>Casillero 402 · Rebaja por gastos personales</span>
+              <strong>-{{ f.rebajaGastosPersonales | number: '1.2-2' }} USD</strong>
+            </div>
+            <div class="rdep-resumen-item">
+              <span>Casillero 403 · Impuesto después de la rebaja</span>
+              <strong>{{ f.impuestoRentaCausadoDespuesRebaja | number: '1.2-2' }} USD</strong>
+            </div>
+            <div class="rdep-resumen-item rdep-resumen-final">
+              <span>Casillero 407 · Retenido al trabajador</span>
+              <strong>{{ f.impuestoRetenidoTrabajadorEsteEmpleador | number: '1.2-2' }} USD</strong>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      @if (resultadoValidacion(); as resultado) {
+        <mat-card
+          class="rdep-seccion"
+          [class.rdep-validacion-ok]="resultado.valido"
+          [class.rdep-validacion-error]="!resultado.valido"
+        >
+          <mat-card-header>
+            <mat-card-title>
+              {{ resultado.valido ? '✅ Sin errores' : '⚠️ ' + resultado.totalErrores + ' error(es) encontrados' }}
+            </mat-card-title>
+          </mat-card-header>
+          @if (!resultado.valido) {
+            <mat-card-content>
+              <mat-list>
+                @for (error of resultado.errores; track error.campo + error.motivo) {
+                  <mat-list-item class="rdep-error-item">
+                    <div class="rdep-error-detalle">
+                      <strong>{{ error.campo }}</strong>
+                      <span class="rdep-error-valor">Valor ingresado: "{{ error.valorIngresado }}"</span>
+                      <span>{{ error.motivo }}</span>
+                      <span class="rdep-error-fix">✏️ {{ error.comoCorregirlo }}</span>
+                    </div>
+                  </mat-list-item>
+                }
+              </mat-list>
+            </mat-card-content>
+          }
+        </mat-card>
+      }
+
+      @if (mostrarHistorial()) {
+        <mat-card class="rdep-seccion">
+          <mat-card-header><mat-card-title>Historial de cambios</mat-card-title></mat-card-header>
+          <mat-card-content>
+            <mat-list>
+              @for (item of historial(); track item.id) {
+                <mat-list-item class="rdep-historial-item">
+                  <div class="rdep-historial-detalle">
+                    <strong>{{ item.accion }}</strong>
+                    <span>{{ item.creadoEn | date: 'short' }}</span>
+                    <span>{{ item.detalle }}</span>
+                  </div>
+                </mat-list-item>
+              }
+              @empty {
+                <p>Sin movimientos todavía.</p>
+              }
+            </mat-list>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <!-- ── Acciones ── -->
+      <div class="rdep-acciones">
+        <button mat-stroked-button type="button" (click)="cancelar()">
+          <mat-icon>arrow_back</mat-icon> Volver al listado
+        </button>
+
+        @if (!esSoloLectura()) {
+          <button mat-flat-button color="primary" type="button" (click)="guardar()" [disabled]="guardando()">
+            <mat-icon>save</mat-icon> {{ esNuevo() ? 'Crear borrador' : 'Guardar cambios' }}
+          </button>
+        }
+
+        @if (!esNuevo()) {
+          <button mat-stroked-button type="button" (click)="validar()" [disabled]="validando() || esSoloLectura()">
+            <mat-icon>fact_check</mat-icon> Validar
+          </button>
+
+          <button mat-stroked-button type="button" (click)="descargarPdf()" [disabled]="exportando()">
+            <mat-icon>picture_as_pdf</mat-icon> Vista previa PDF
+          </button>
+
+          <button
+            mat-flat-button
+            color="accent"
+            type="button"
+            (click)="generar()"
+            [disabled]="!puedeGenerar() || generando()"
+          >
+            <mat-icon>task_alt</mat-icon> Generar formulario
+          </button>
+
+          @if (puedeDescargarAnexo()) {
+            <button mat-flat-button color="primary" type="button" (click)="descargarAnexoExcel()" [disabled]="exportando()">
+              <mat-icon>table_view</mat-icon> Descargar anexo RDEP (.xlsx)
+            </button>
+          }
+
+          <button mat-button type="button" (click)="alternarHistorial()">
+            <mat-icon>history</mat-icon> {{ mostrarHistorial() ? 'Ocultar historial' : 'Ver historial' }}
+          </button>
+        }
+      </div>
+    </form>
+  }
+</div>

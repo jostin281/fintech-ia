@@ -1,0 +1,1202 @@
+// Configura la generación de Prisma Client para TypeScript.
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+// Indica que utilizaremos PostgreSQL.
+datasource db {
+  provider = "postgresql"
+}
+
+// Valores permitidos para identificar el tipo de movimiento.
+enum TipoMovimiento {
+  INGRESO
+  GASTO
+}
+
+// Roles permitidos dentro del sistema.
+enum RolUsuario {
+  USUARIO
+  ADMINISTRADOR
+}
+
+// Tipos de alertas del sistema
+enum TipoNotificacion {
+  ALERTA_PRESUPUESTO
+  META_AHORRO
+  RECORDATORIO_PAGO
+  RECORDATORIO_MOVIMIENTO
+  RECOMENDACION_IA
+  SISTEMA
+}
+
+// Roles permitidos para identificar quién envió el mensaje.
+enum RolMensajeAsistente {
+  USUARIO
+  ASISTENTE
+}
+
+// Orígenes permitidos para las respuestas generadas por el asistente.
+enum OrigenRespuestaAsistente {
+  GEMINI
+  MOTOR_REGLAS
+}
+
+// Tipos de contribuyentes que podrán configurar su información tributaria.
+enum TipoContribuyente {
+  PERSONA_NATURAL
+  SOCIEDAD
+}
+
+// Regímenes tributarios contemplados inicialmente por el sistema.
+enum RegimenTributario {
+  GENERAL
+  RIMPE_NEGOCIO_POPULAR
+  RIMPE_EMPRENDEDOR
+}
+
+// Ambientes disponibles para conectarse con los servicios del SRI.
+enum AmbienteSri {
+  PRUEBAS
+  PRODUCCION
+}
+
+// Tipos de identificación admitidos por una factura electrónica del SRI.
+enum TipoIdentificacionSri {
+  RUC
+  CEDULA
+  PASAPORTE
+  CONSUMIDOR_FINAL
+  IDENTIFICACION_EXTERIOR
+}
+
+// Tarifas habilitadas inicialmente en el catálogo de productos.
+// Se empieza con 0 % y 15 % para no asignar tasas especiales sin respaldo.
+enum TarifaIvaProducto {
+  CERO
+  QUINCE
+}
+
+// Estados internos que permiten controlar el ciclo de una factura.
+enum EstadoFactura {
+  BORRADOR
+  FIRMADA
+  RECIBIDA
+  AUTORIZADA
+  DEVUELTA
+  NO_AUTORIZADA
+  ANULADA_LOCAL
+  ERROR
+}
+
+// Forma en que una categoría financiera participa en el cálculo tributario.
+enum TratamientoTributarioMovimiento {
+  INGRESO_GRAVADO
+  INGRESO_EXENTO
+  COSTO_GASTO_DEDUCIBLE
+  GASTO_PERSONAL
+  NO_DEDUCIBLE
+  IGNORAR
+}
+
+// Rubros reconocidos para la rebaja por gastos personales.
+enum CategoriaGastoPersonal {
+  VIVIENDA
+  ALIMENTACION
+  SALUD
+  EDUCACION_ARTE_CULTURA
+  VESTIMENTA
+  TURISMO
+}
+
+// Impuesto al que corresponde una retención recibida.
+enum TipoRetencionRecibida {
+  RENTA
+  IVA
+}
+
+// Documentos SRI que puede procesar la importación de comprobantes
+// recibidos. Solo FACTURA se parsea por ahora; el enum queda abierto para
+// que una fase futura agregue NOTA_CREDITO, NOTA_DEBITO, etc. sin
+// reestructurar el modelo.
+enum TipoComprobanteRecibido {
+  FACTURA
+}
+
+// Estado de un comprobante recibido ya importado. PENDIENTE/PROCESANDO
+// quedan reservados para una futura sincronización automática; por ahora
+// el sistema procesa el XML subido de forma síncrona en el mismo request y
+// solo persiste filas en PROCESADO o ERROR_XML.
+enum EstadoComprobanteRecibido {
+  PENDIENTE
+  PROCESANDO
+  PROCESADO
+  ERROR_XML
+}
+
+// Origen de un movimiento: quién o qué lo generó.
+enum OrigenMovimiento {
+  MANUAL
+  SRI
+  VENTA
+  COMPRA
+}
+
+// Cómo se asignó la categoría a una línea de un comprobante recibido.
+// IA y PROVEEDOR quedan reservados para fases futuras.
+enum MetodoClasificacionDetalle {
+  REGLA
+  MANUAL
+  IA
+  PROVEEDOR
+}
+
+// Origen de una regla de categorización: creada a mano por un
+// administrador/usuario, o aprendida automáticamente de una corrección
+// manual sobre una línea de un comprobante recibido.
+enum OrigenReglaCategorizacion {
+  MANUAL
+  CORRECCION
+}
+
+// ---------- MODELO DE LOS DATOS DE UNA CATEGORÍA EN LA DB ----------
+model Categoria {
+  // Identificador principal y se incrementa automáticamente.
+  id Int @id @default(autoincrement())
+
+  // Nombre visible de la categoría.
+  nombre String @db.VarChar(100)
+
+  // Determina si se utiliza para ingresos o gastos.
+  tipo TipoMovimiento
+
+  // Permite desactivar una categoría sin eliminarla.
+  activa Boolean @default(true)
+
+  // Fecha de creación del registro.
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  // Se actualiza automáticamente cuando cambia el registro.
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ----- Relaciones ------
+  // Relación movimientos de una categoría.
+  movimientos Movimiento[]
+
+  // Presupuestos asociados con esta categoría.
+  presupuestos Presupuesto[]
+
+  // Líneas de comprobantes recibidos clasificadas en esta categoría.
+  detallesComprobantesRecibidos DetalleComprobanteRecibido[]
+
+  // Reglas de categorización que asignan esta categoría.
+  reglasCategorizacion ReglaCategorizacion[]
+
+  // Impide repetir un mismo nombre para el mismo tipo.
+  @@unique([nombre, tipo])
+  // Nombre real de la tabla en PostgreSQL.
+  @@map("categorias")
+}
+
+// ---------- MODELO DE LOS DATOS DE UN USUARIO ----------
+model Usuario {
+  // Identificador principal.
+  id Int @id @default(autoincrement())
+
+  // Nombre de la persona.
+  nombre String @db.VarChar(100)
+
+  // Correo utilizado para registrarse e iniciar sesión.
+  correo String @unique @db.VarChar(150)
+
+  // Contendrá la contraseña cifrada, nunca la contraseña original.
+  contrasenaHash String @map("contrasena_hash") @db.VarChar(255)
+
+  // Define los permisos del usuario.
+  rol RolUsuario @default(USUARIO)
+
+  // Permite bloquear una cuenta sin eliminarla.
+  activo Boolean @default(true)
+
+  // Fecha en que se registró el usuario.
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  // Fecha de la última modificación.
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // Clave personal de Google Gemini. Cada usuario/cliente puede usar la
+  // suya; si queda vacía, el asistente usa el motor de reglas local.
+  geminiApiKey String? @map("gemini_api_key") @db.VarChar(255)
+
+  // -----RELACIONES-----
+  // Movimientos creados por el usuario.
+  movimientos Movimiento[]
+
+  // Presupuestos creados por el usuario.
+  presupuestos Presupuesto[]
+
+  // Metas creadas por el usuario.
+  metasAhorro MetaAhorro[]
+
+  // Notificaciones para el usuario
+  notificaciones Notificacion[]
+
+  // Conversaciones del usuario con el asistente financiero.
+  conversacionesAsistente ConversacionAsistente[]
+
+  // Configuración tributaria utilizada para emitir comprobantes electrónicos.
+  perfilTributario PerfilTributario?
+
+  // Proveedores registrados a partir de comprobantes recibidos importados.
+  proveedores Proveedor[]
+
+  // Comprobantes electrónicos recibidos (facturas de compra/gasto) que el
+  // usuario importó manualmente.
+  comprobantesRecibidos ComprobanteRecibido[]
+
+  // Reglas de categorización personales del usuario (además de las
+  // reglas globales administradas por un ADMINISTRADOR).
+  reglasCategorizacion ReglaCategorizacion[]
+
+  // Formularios 107 / Anexo RDEP que este usuario ha registrado.
+  formulariosRdep FormularioRdep[]
+
+  // Movimientos de historial (auditoría) que este usuario generó sobre
+  // sus propios formularios RDEP.
+  historialFormulariosRdep HistorialFormularioRdep[]
+
+  // Nombre real de la tabla en PostgreSQL.
+  @@map("usuarios")
+}
+
+// ---------- MODELO DE DATOS DE UN MOVIMIENTO -----------
+model Movimiento {
+  // Identificador principal.
+  id Int @id @default(autoincrement())
+
+  // Indica si el movimiento es un INGRESO o un GASTO.
+  tipo TipoMovimiento
+
+  // Valor económico del movimiento, permite hasta 12 dígitos y 2 decimales.
+  monto Decimal @db.Decimal(12, 2)
+
+  // Información adicional sobre el movimiento ("?" significa opcional)
+  descripcion String? @db.VarChar(255)
+
+  // Fecha en que se realizó movimiento, si no se envía una fecha se utiliza la actual.
+  fecha DateTime @default(now())
+
+  // Fecha en la que se realizó la eliminación lógica.
+  eliminadoEn DateTime? @map("eliminado_en")
+
+  // Indica quién o qué generó el movimiento (registro manual del usuario,
+  // importación de un comprobante del SRI, venta o compra del negocio).
+  origen OrigenMovimiento @default(MANUAL)
+
+  // ----- Claves foráneas -----
+  usuarioId Int @map("usuario_id") //Id del usuario al que pertenece el movimiento.
+
+  // Identificador de la categoría asociada al movimiento.
+  categoriaId Int @map("categoria_id") //Id de la categoría asociada al movimiento.
+
+  // Fecha en la que se creó este registro en la base de datos.
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  // Fecha de la última modificación realizada al registro.
+  // Prisma la actualiza automáticamente.
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ----- Relaciones de movimientos con usuarios y categorías ------
+  // Relación con usuarios.
+  // Indica que usuarioId debe corresponder al id de un usuario existente.
+  // Restrict evita eliminar un usuario si todavía tiene movimientos relacionados.
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  // Relación con categoría.
+  // Indica que categoriaId debe corresponder al id de una categoría existente.
+  // Restrict evita eliminar una categoría si tiene movimientos relacionados.
+  categoria Categoria @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+
+  // Línea de un comprobante recibido que generó este movimiento (relación
+  // inversa; la clave foránea vive en DetalleComprobanteRecibido.movimientoId
+  // porque un movimiento espejo nace de, como máximo, una sola línea).
+  detalleComprobanteRecibido DetalleComprobanteRecibido?
+
+  // Crea índice utilizando usuarioId y fecha, ayuda a realizar más rápido consultas como:
+  // "Obtener los movimientos de un usuario ordenados o filtrados por fecha".
+  @@index([usuarioId, fecha])
+  // Crea índice para categoriaId y ayuda a buscar más rápido los movimientos pertenecientes a una categoría.
+  @@index([categoriaId])
+  // Nombre real de la tabla en PostgreSQL.
+  @@map("movimientos")
+}
+
+// ---------- MODELO DE DATOS DE PRESUPUESTOS MENSUALES -----------
+model Presupuesto {
+  // Identificador principal generado automáticamente.
+  id Int @id @default(autoincrement())
+
+  // Cantidad máxima que el usuario desea gastar.
+  montoLimite Decimal @map("monto_limite") @db.Decimal(12, 2)
+
+  // Mes correspondiente al presupuesto, desde 1 hasta 12.
+  mes Int
+
+  // Año correspondiente al presupuesto.
+  anio Int
+
+  // Porcentaje de consumo en el que se deberá generar una alerta.
+  porcentajeAlerta Int @default(80) @map("porcentaje_alerta")
+
+  // Indica si el presupuesto continúa habilitado.
+  activo Boolean @default(true)
+
+  // Fechas de control interno del registro.
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ------ Claves foráneas ------
+  usuarioId   Int @map("usuario_id")
+  categoriaId Int @map("categoria_id")
+
+  // ----- Relaciones ------
+  // Un presupuesto pertenece a un usuario y a una categoría.
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  categoria Categoria @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+
+  // Impide presupuestos repetidos para la misma categoría y periodo.
+  @@unique([usuarioId, categoriaId, anio, mes])
+  // Mejoran las búsquedas por usuario, periodo y categoría.
+  @@index([usuarioId, anio, mes, activo])
+  @@index([categoriaId])
+  @@map("presupuestos")
+}
+
+// ---------- MODELO DE DATOS DE UNA META DE AHORRO ----------
+model MetaAhorro {
+  // Identificador principal de la meta.
+  id Int @id @default(autoincrement())
+
+  // Nombre que el usuario le da a su meta.
+  nombre String @db.VarChar(100)
+
+  // Cantidad de dinero que el usuario quiere alcanzar.
+  montoObjetivo Decimal @map("monto_objetivo") @db.Decimal(12, 2)
+
+  // Fecha límite o fecha esperada para cumplir la meta.
+  fechaObjetivo DateTime @map("fecha_objetivo") @db.Date
+
+  // Indica si la meta sigue activa.
+  activo Boolean @default(true)
+
+  // Fecha en la que se creó la meta.
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  // Fecha de la última modificación de la meta.
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ----- Clave foránea -----
+  usuarioId Int @map("usuario_id")
+
+  // ----- Relaciones -----
+  // Relación con usuarios.
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  // Relación con aportes.
+  aportes AporteMeta[]
+
+  // Crea un índice para facilitar búsquedas de metas
+  @@index([usuarioId, activo, fechaObjetivo])
+  // Nombre real de la tabla en PostgreSQL.
+  @@map("metas_ahorro")
+}
+
+// ---------- MODELO DE DATOS DE UN APORTE A UNA META ----------
+model AporteMeta {
+  // Identificador principal del aporte.
+  id Int @id @default(autoincrement())
+
+  // Cantidad de dinero aportada a la meta.
+  monto Decimal @db.Decimal(12, 2)
+
+  // Fecha en la que se registró el aporte.
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  // Fecha en la que el aporte fue eliminado de forma lógica.
+  eliminadoEn DateTime? @map("eliminado_en")
+
+  // ----- Clave foránea -----
+  // Id de la meta de ahorro a la que pertenece este aporte.
+  metaAhorroId Int @map("meta_ahorro_id")
+
+  // ----- Relaciones -----
+  // Relación coon MetaAhorro.
+  metaAhorro MetaAhorro @relation(fields: [metaAhorroId], references: [id], onDelete: Cascade)
+
+  // Crea un índice para hacer más rápidas las consultas
+  @@index([metaAhorroId, eliminadoEn, creadoEn])
+  // Nombre real de la tabla en PostgreSQL.
+  @@map("aportes_meta")
+}
+
+// ---------- MODELO DE DATOS DE NOTIFICACIONES PARA PRESUPUESTOS Y METAS ----------
+// (Quedan preparados tipos para módulos posteriores: Recordatorios de pago, recordatorios de movimientos, recomendaciones de Gemini, avisos generales del sistema.)
+
+model Notificacion {
+  // Identificador principal de la notificación.
+  id Int @id @default(autoincrement())
+
+  // Título que tendrá la notificación.
+  titulo String @db.VarChar(120)
+
+  // Contenido o información que se mostrará al usuario.
+  mensaje String @db.VarChar(500)
+
+  // Indica qué tipo de notificación es.
+  tipo TipoNotificacion
+
+  // Guarda una referencia opcional para identificar qué originó la notificación.
+  referencia String? @db.VarChar(150)
+
+  // Indica si el usuario ya leyó la notificación.
+  leida Boolean @default(false)
+
+  // Guarda la fecha y hora en la que el usuario leyó la notificación.
+  leidaEn DateTime? @map("leida_en")
+
+  // Fecha en la que se realizó la eliminación lógica de la notificación.
+  eliminadoEn DateTime? @map("eliminado_en")
+
+  // Fecha en la que se creó la notificación.
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  // ----- Clave foránea -----
+  // Id del usuario al que pertenece la notificación.
+  usuarioId Int @map("usuario_id")
+
+  // ----- Relaciones -----
+  // Relación con usuarios.
+  // Indica que usuarioId debe corresponder al id de un usuario existente.
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  // Impide repetir una misma referencia para un mismo usuario.
+  @@unique([usuarioId, referencia])
+  // Crea un índice para facilitar la búsqueda de notificaciones.
+  // de un usuario según su estado de eliminación y fecha de creación.
+  @@index([usuarioId, eliminadoEn, creadoEn])
+  // Crea un índice para facilitar la búsqueda de notificaciones
+  // leídas o no leídas que todavía no hayan sido eliminadas.
+  @@index([usuarioId, leida, eliminadoEn])
+  // Nombre real de la tabla en PostgreSQL.
+  @@map("notificaciones")
+}
+
+// ---------- MODELO DE DATOS DE UNA CONVERSACIÓN CON EL ASISTENTE ----------
+model ConversacionAsistente {
+  // Identificador principal de la conversación.
+  id Int @id @default(autoincrement())
+
+  // Nombre breve que permitirá identificar la conversación en el historial.
+  titulo String @db.VarChar(120)
+
+  // Fecha en la que la conversación fue eliminada de forma lógica.
+  eliminadoEn DateTime? @map("eliminado_en")
+
+  // Fecha en la que se creó la conversación.
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  // Fecha de la última modificación o actividad de la conversación.
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ----- Clave foránea -----
+  // Id del usuario propietario de la conversación.
+  usuarioId Int @map("usuario_id")
+
+  // ----- Relaciones -----
+  // Relación con usuarios.
+  // Indica que usuarioId debe corresponder al id de un usuario existente.
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  // Mensajes que pertenecen a esta conversación.
+  mensajes MensajeAsistente[]
+
+  // Facilita la búsqueda del historial activo de un usuario.
+  @@index([usuarioId, eliminadoEn, actualizadoEn])
+  // Nombre real de la tabla en PostgreSQL.
+  @@map("conversaciones_asistente")
+}
+
+// ---------- MODELO DE DATOS DE UN MENSAJE DEL ASISTENTE ----------
+model MensajeAsistente {
+  // Identificador principal del mensaje.
+  id Int @id @default(autoincrement())
+
+  // Indica si el mensaje fue enviado por el usuario o por el asistente.
+  rol RolMensajeAsistente
+
+  // Contenido completo de la pregunta o respuesta.
+  contenido String @db.Text
+
+  // Indica si la respuesta fue generada por Gemini o por el motor local.
+  // Es opcional porque los mensajes enviados por el usuario no tienen un origen.
+  origenRespuesta OrigenRespuestaAsistente? @map("origen_respuesta")
+
+  // Fecha en la que se guardó el mensaje.
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  // ----- Clave foránea -----
+  // Id de la conversación a la que pertenece el mensaje.
+  conversacionId Int @map("conversacion_id")
+
+  // ----- Relaciones -----
+  // Relación con conversaciones.
+  // Al eliminar físicamente una conversación también se eliminan sus mensajes.
+  conversacion ConversacionAsistente @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+
+  // Facilita la consulta de los mensajes en orden cronológico.
+  @@index([conversacionId, creadoEn])
+  // Nombre real de la tabla en PostgreSQL.
+  @@map("mensajes_asistente")
+}
+
+// ---------- MODELO DE DATOS DEL PERFIL TRIBUTARIO ----------
+model PerfilTributario {
+  // Identificador principal del perfil tributario.
+  id Int @id @default(autoincrement())
+
+  // Número de RUC del contribuyente que emitirá los comprobantes.
+  ruc String @unique @db.VarChar(13)
+
+  // Nombre legal del contribuyente registrado en el SRI.
+  razonSocial String @map("razon_social") @db.VarChar(300)
+
+  // Nombre comercial utilizado por el contribuyente, si dispone de uno.
+  nombreComercial String? @map("nombre_comercial") @db.VarChar(300)
+
+  // Dirección principal registrada para el contribuyente.
+  direccionMatriz String @map("direccion_matriz") @db.VarChar(300)
+
+  // Indica si el contribuyente es una persona natural o una sociedad.
+  tipoContribuyente TipoContribuyente @map("tipo_contribuyente")
+
+  // Régimen tributario con el que se realizarán los cálculos posteriores.
+  regimenTributario RegimenTributario @default(GENERAL) @map("regimen_tributario")
+
+  // Indica si el contribuyente está obligado a llevar contabilidad.
+  obligadoContabilidad Boolean @default(false) @map("obligado_contabilidad")
+
+  // Código asignado por el SRI cuando el emisor es contribuyente especial.
+  codigoContribuyenteEspecial String? @map("codigo_contribuyente_especial") @db.VarChar(20)
+
+  // Código asignado por el SRI cuando el emisor es agente de retención.
+  codigoAgenteRetencion String? @map("codigo_agente_retencion") @db.VarChar(20)
+
+  // Código de tres dígitos del establecimiento desde el cual se emitirá.
+  establecimiento String @default("001") @db.VarChar(3)
+
+  // Código de tres dígitos del punto de emisión.
+  puntoEmision String @default("001") @map("punto_emision") @db.VarChar(3)
+
+  // Ambiente del SRI utilizado para enviar los comprobantes.
+  ambienteSri AmbienteSri @default(PRUEBAS) @map("ambiente_sri")
+
+  // Permite desactivar la configuración sin eliminar su información.
+  activo Boolean @default(true)
+
+  // Fechas de control interno.
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ----- Clave foránea -----
+  usuarioId Int @unique @map("usuario_id")
+
+  // ----- Relaciones -----
+  usuario                   Usuario                            @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  firmaElectronica          FirmaElectronica?
+  clientes                  ClienteFacturacion[]
+  productosServicios        ProductoServicioFacturacion[]
+  facturas                  FacturaElectronica[]
+  secuencias                SecuenciaComprobante[]
+  configuracionesCategorias ConfiguracionCategoriaTributaria[]
+  retencionesRecibidas      RetencionRecibida[]
+  formulariosRdep           FormularioRdep[]
+
+  @@map("perfiles_tributarios")
+}
+
+// ---------- MODELO DE DATOS DE LA FIRMA ELECTRÓNICA ----------
+model FirmaElectronica {
+  // Identificador principal.
+  id Int @id @default(autoincrement())
+
+  // Credencial extraída del archivo P12 y cifrada con AES-256-GCM.
+  credencialCifrada     Bytes @map("credencial_cifrada")
+  vectorInicializacion  Bytes @map("vector_inicializacion")
+  etiquetaAutenticacion Bytes @map("etiqueta_autenticacion")
+
+  // Metadatos no secretos del certificado.
+  nombreArchivo     String   @map("nombre_archivo") @db.VarChar(255)
+  numeroSerie       String   @map("numero_serie") @db.VarChar(200)
+  emisorCertificado String   @map("emisor_certificado") @db.VarChar(500)
+  tipoClave         String   @map("tipo_clave") @db.VarChar(10)
+  validoHasta       DateTime @map("valido_hasta")
+  activo            Boolean  @default(true)
+
+  // Fechas de control interno.
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ----- Clave foránea y relación -----
+  perfilTributarioId Int              @unique @map("perfil_tributario_id")
+  perfilTributario   PerfilTributario @relation(fields: [perfilTributarioId], references: [id], onDelete: Cascade)
+
+  @@map("firmas_electronicas")
+}
+
+// ---------- MODELO DE DATOS DE UN CLIENTE DE FACTURACIÓN ----------
+model ClienteFacturacion {
+  id                 Int                   @id @default(autoincrement())
+  tipoIdentificacion TipoIdentificacionSri @map("tipo_identificacion")
+  identificacion     String                @db.VarChar(20)
+  razonSocial        String                @map("razon_social") @db.VarChar(300)
+  correo             String?               @db.VarChar(150)
+  direccion          String?               @db.VarChar(300)
+  telefono           String?               @db.VarChar(30)
+  activo             Boolean               @default(true)
+  creadoEn           DateTime              @default(now()) @map("creado_en")
+  actualizadoEn      DateTime              @updatedAt @map("actualizado_en")
+
+  perfilTributarioId Int                  @map("perfil_tributario_id")
+  perfilTributario   PerfilTributario     @relation(fields: [perfilTributarioId], references: [id], onDelete: Restrict)
+  facturas           FacturaElectronica[]
+
+  @@unique([perfilTributarioId, identificacion])
+  @@index([perfilTributarioId, activo, razonSocial])
+  @@map("clientes_facturacion")
+}
+
+// ---------- MODELO DE DATOS DE UN PRODUCTO O SERVICIO ----------
+model ProductoServicioFacturacion {
+  id              Int               @id @default(autoincrement())
+  codigoPrincipal String            @map("codigo_principal") @db.VarChar(25)
+  descripcion     String            @db.VarChar(300)
+  precioUnitario  Decimal           @map("precio_unitario") @db.Decimal(14, 6)
+  tarifaIva       TarifaIvaProducto @map("tarifa_iva")
+  activo          Boolean           @default(true)
+  creadoEn        DateTime          @default(now()) @map("creado_en")
+  actualizadoEn   DateTime          @updatedAt @map("actualizado_en")
+
+  perfilTributarioId Int                         @map("perfil_tributario_id")
+  perfilTributario   PerfilTributario            @relation(fields: [perfilTributarioId], references: [id], onDelete: Restrict)
+  detallesFactura    DetalleFacturaElectronica[]
+
+  @@unique([perfilTributarioId, codigoPrincipal])
+  @@index([perfilTributarioId, activo, descripcion])
+  @@map("productos_servicios_facturacion")
+}
+
+// ---------- MODELO DE DATOS DE UNA FACTURA ELECTRÓNICA ----------
+model FacturaElectronica {
+  id     Int           @id @default(autoincrement())
+  estado EstadoFactura @default(BORRADOR)
+
+  // Numeración y clave asignadas cuando se inicia la emisión.
+  establecimiento String  @db.VarChar(3)
+  puntoEmision    String  @map("punto_emision") @db.VarChar(3)
+  secuencial      Int?
+  claveAcceso     String? @unique @map("clave_acceso") @db.VarChar(49)
+
+  // Datos generales y forma de pago del comprobante.
+  fechaEmision DateTime @map("fecha_emision")
+  formaPago    String   @default("20") @map("forma_pago") @db.VarChar(2)
+  observacion  String?  @db.VarChar(300)
+
+  // Copia inmutable de los datos del emisor y comprador al facturar.
+  emisorRuc                         String                @map("emisor_ruc") @db.VarChar(13)
+  emisorRazonSocial                 String                @map("emisor_razon_social") @db.VarChar(300)
+  emisorNombreComercial             String?               @map("emisor_nombre_comercial") @db.VarChar(300)
+  emisorDireccionMatriz             String                @map("emisor_direccion_matriz") @db.VarChar(300)
+  emisorRegimenTributario           RegimenTributario     @map("emisor_regimen_tributario")
+  emisorObligadoContabilidad        Boolean               @map("emisor_obligado_contabilidad")
+  emisorCodigoContribuyenteEspecial String?               @map("emisor_codigo_contribuyente_especial") @db.VarChar(20)
+  emisorCodigoAgenteRetencion       String?               @map("emisor_codigo_agente_retencion") @db.VarChar(20)
+  emisorAmbienteSri                 AmbienteSri           @map("emisor_ambiente_sri")
+  compradorTipoIdentificacion       TipoIdentificacionSri @map("comprador_tipo_identificacion")
+  compradorIdentificacion           String                @map("comprador_identificacion") @db.VarChar(20)
+  compradorRazonSocial              String                @map("comprador_razon_social") @db.VarChar(300)
+  compradorCorreo                   String?               @map("comprador_correo") @db.VarChar(150)
+  compradorDireccion                String?               @map("comprador_direccion") @db.VarChar(300)
+
+  // Totales calculados por el servidor; el cliente no los decide.
+  subtotalCero      Decimal @default(0) @map("subtotal_cero") @db.Decimal(14, 2)
+  subtotalQuince    Decimal @default(0) @map("subtotal_quince") @db.Decimal(14, 2)
+  totalSinImpuestos Decimal @map("total_sin_impuestos") @db.Decimal(14, 2)
+  totalDescuento    Decimal @default(0) @map("total_descuento") @db.Decimal(14, 2)
+  iva               Decimal @default(0) @db.Decimal(14, 2)
+  importeTotal      Decimal @map("importe_total") @db.Decimal(14, 2)
+
+  // Evidencias del proceso electrónico ante el SRI.
+  xmlFirmado         String?   @map("xml_firmado") @db.Text
+  xmlAutorizado      String?   @map("xml_autorizado") @db.Text
+  numeroAutorizacion String?   @unique @map("numero_autorizacion") @db.VarChar(49)
+  fechaAutorizacion  DateTime? @map("fecha_autorizacion")
+  mensajesSri        Json?     @map("mensajes_sri")
+  ultimoIntentoSri   DateTime? @map("ultimo_intento_sri")
+  eliminadoEn        DateTime? @map("eliminado_en")
+  creadoEn           DateTime  @default(now()) @map("creado_en")
+  actualizadoEn      DateTime  @updatedAt @map("actualizado_en")
+
+  // ----- Claves foráneas y relaciones -----
+  perfilTributarioId   Int                         @map("perfil_tributario_id")
+  clienteId            Int                         @map("cliente_id")
+  perfilTributario     PerfilTributario            @relation(fields: [perfilTributarioId], references: [id], onDelete: Restrict)
+  cliente              ClienteFacturacion          @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  detalles             DetalleFacturaElectronica[]
+  retencionesRecibidas RetencionRecibida[]
+
+  @@unique([perfilTributarioId, establecimiento, puntoEmision, secuencial])
+  @@index([perfilTributarioId, estado, fechaEmision])
+  @@index([clienteId])
+  @@map("facturas_electronicas")
+}
+
+// ---------- MODELO DE DATOS DE UN DETALLE DE FACTURA ----------
+model DetalleFacturaElectronica {
+  id              Int               @id @default(autoincrement())
+  codigoPrincipal String            @map("codigo_principal") @db.VarChar(25)
+  descripcion     String            @db.VarChar(300)
+  cantidad        Decimal           @db.Decimal(14, 6)
+  precioUnitario  Decimal           @map("precio_unitario") @db.Decimal(14, 6)
+  descuento       Decimal           @default(0) @db.Decimal(14, 2)
+  tarifaIva       TarifaIvaProducto @map("tarifa_iva")
+  baseImponible   Decimal           @map("base_imponible") @db.Decimal(14, 2)
+  valorIva        Decimal           @map("valor_iva") @db.Decimal(14, 2)
+  total           Decimal           @db.Decimal(14, 2)
+
+  facturaId          Int                         @map("factura_id")
+  productoServicioId Int                         @map("producto_servicio_id")
+  factura            FacturaElectronica          @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+  productoServicio   ProductoServicioFacturacion @relation(fields: [productoServicioId], references: [id], onDelete: Restrict)
+
+  @@index([facturaId])
+  @@index([productoServicioId])
+  @@map("detalles_facturas_electronicas")
+}
+
+// ---------- MODELO DE CONTROL DE SECUENCIALES ----------
+model SecuenciaComprobante {
+  id                  Int      @id @default(autoincrement())
+  codigoDocumento     String   @map("codigo_documento") @db.VarChar(2)
+  establecimiento     String   @db.VarChar(3)
+  puntoEmision        String   @map("punto_emision") @db.VarChar(3)
+  siguienteSecuencial Int      @default(1) @map("siguiente_secuencial")
+  actualizadoEn       DateTime @updatedAt @map("actualizado_en")
+
+  perfilTributarioId Int              @map("perfil_tributario_id")
+  perfilTributario   PerfilTributario @relation(fields: [perfilTributarioId], references: [id], onDelete: Restrict)
+
+  @@unique([perfilTributarioId, codigoDocumento, establecimiento, puntoEmision])
+  @@map("secuencias_comprobantes")
+}
+
+// ---------- CONFIGURACIÓN FINTECH → TRIBUTACIÓN ----------
+model ConfiguracionCategoriaTributaria {
+  id                     Int                             @id @default(autoincrement())
+  categoriaId            Int                             @map("categoria_id")
+  tratamiento            TratamientoTributarioMovimiento
+  categoriaGastoPersonal CategoriaGastoPersonal?         @map("categoria_gasto_personal")
+  creadoEn               DateTime                        @default(now()) @map("creado_en")
+  actualizadoEn          DateTime                        @updatedAt @map("actualizado_en")
+
+  perfilTributarioId Int              @map("perfil_tributario_id")
+  perfilTributario   PerfilTributario @relation(fields: [perfilTributarioId], references: [id], onDelete: Cascade)
+
+  // categoriaId referencia conceptualmente a Categoria, pero se mantiene sin
+  // relación Prisma para no modificar el módulo existente de categorías.
+  @@unique([perfilTributarioId, categoriaId])
+  @@index([perfilTributarioId, tratamiento])
+  @@map("configuraciones_categorias_tributarias")
+}
+
+// ---------- RETENCIONES ENTREGADAS POR CLIENTES ----------
+model RetencionRecibida {
+  id                   Int                   @id @default(autoincrement())
+  tipo                 TipoRetencionRecibida
+  emisorIdentificacion String                @map("emisor_identificacion") @db.VarChar(20)
+  numeroComprobante    String                @map("numero_comprobante") @db.VarChar(50)
+  fechaEmision         DateTime              @map("fecha_emision")
+  baseImponible        Decimal               @map("base_imponible") @db.Decimal(14, 2)
+  porcentaje           Decimal               @db.Decimal(7, 4)
+  valor                Decimal               @db.Decimal(14, 2)
+  observacion          String?               @db.VarChar(300)
+  activo               Boolean               @default(true)
+  creadoEn             DateTime              @default(now()) @map("creado_en")
+  actualizadoEn        DateTime              @updatedAt @map("actualizado_en")
+
+  perfilTributarioId Int                 @map("perfil_tributario_id")
+  facturaId          Int?                @map("factura_id")
+  perfilTributario   PerfilTributario    @relation(fields: [perfilTributarioId], references: [id], onDelete: Restrict)
+  factura            FacturaElectronica? @relation(fields: [facturaId], references: [id], onDelete: Restrict)
+
+  @@unique([perfilTributarioId, emisorIdentificacion, numeroComprobante])
+  @@index([perfilTributarioId, tipo, fechaEmision, activo])
+  @@index([facturaId])
+  @@map("retenciones_recibidas")
+}
+
+// ---------- MODELO DE DATOS DE UN PROVEEDOR (emisor de comprobantes recibidos) ----------
+// Representa a quien el usuario le compra (emisor de una factura de gasto),
+// no a un cliente al que el usuario le vende (eso ya lo modela
+// ClienteFacturacion). Se crea automáticamente al importar el primer
+// comprobante de un RUC nuevo.
+model Proveedor {
+  id Int @id @default(autoincrement())
+
+  ruc             String  @db.VarChar(13)
+  razonSocial     String  @map("razon_social") @db.VarChar(300)
+  nombreComercial String? @map("nombre_comercial") @db.VarChar(300)
+  activo          Boolean @default(true)
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ----- Clave foránea -----
+  usuarioId Int     @map("usuario_id")
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  // ----- Relaciones -----
+  comprobantesRecibidos ComprobanteRecibido[]
+
+  // Un mismo RUC no se repite dos veces para el mismo usuario.
+  @@unique([usuarioId, ruc])
+  @@index([usuarioId, activo, razonSocial])
+  @@map("proveedores")
+}
+
+// ---------- MODELO DE DATOS DE UN COMPROBANTE RECIBIDO (factura de compra/gasto) ----------
+// Encabezado de una factura electrónica del SRI que el usuario recibió (no
+// emitió). El XML original se conserva íntegro y jamás se modifica; los
+// datos financieros de aquí siempre deben poder rastrearse hasta ese XML.
+model ComprobanteRecibido {
+  id              Int                       @id @default(autoincrement())
+  tipoComprobante TipoComprobanteRecibido   @default(FACTURA) @map("tipo_comprobante")
+  estado          EstadoComprobanteRecibido @default(PENDIENTE)
+
+  // Clave de acceso del SRI (49 dígitos). Única por usuario: no es una
+  // restricción global porque dos usuarios distintos podrían, en teoría,
+  // importar el mismo archivo (por ejemplo, dos socios del mismo negocio).
+  claveAcceso String @map("clave_acceso") @db.VarChar(49)
+
+  rucEmisor             String   @map("ruc_emisor") @db.VarChar(13)
+  razonSocialEmisor     String   @map("razon_social_emisor") @db.VarChar(300)
+  nombreComercialEmisor String?  @map("nombre_comercial_emisor") @db.VarChar(300)
+  establecimiento       String   @db.VarChar(3)
+  puntoEmision          String   @map("punto_emision") @db.VarChar(3)
+  secuencial            String   @db.VarChar(9)
+  fechaEmision          DateTime @map("fecha_emision")
+
+  subtotalSinImpuestos Decimal @map("subtotal_sin_impuestos") @db.Decimal(12, 2)
+  totalDescuento       Decimal @default(0) @map("total_descuento") @db.Decimal(12, 2)
+  iva                  Decimal @default(0) @db.Decimal(12, 2)
+  importeTotal         Decimal @map("importe_total") @db.Decimal(12, 2)
+
+  // Copia íntegra e inmutable del XML tal como se subió.
+  xmlOriginal   String  @map("xml_original") @db.Text
+  archivoNombre String? @map("archivo_nombre") @db.VarChar(255)
+  mensajeError  String? @map("mensaje_error") @db.Text
+
+  descargadoEn DateTime  @default(now()) @map("descargado_en")
+  procesadoEn  DateTime? @map("procesado_en")
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ----- Claves foráneas -----
+  usuarioId   Int       @map("usuario_id")
+  proveedorId Int       @map("proveedor_id")
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  proveedor   Proveedor @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+
+  // ----- Relaciones -----
+  detalles DetalleComprobanteRecibido[]
+
+  @@unique([usuarioId, claveAcceso])
+  @@index([usuarioId, estado, fechaEmision])
+  @@index([proveedorId])
+  @@map("comprobantes_recibidos")
+}
+
+// ---------- MODELO DE DATOS DE UNA LÍNEA DE UN COMPROBANTE RECIBIDO ----------
+// Cada <detalle> del XML original. La categorización (y por lo tanto el
+// gasto) se calcula por línea, no por factura completa, porque un mismo
+// comprobante puede mezclar productos de distintas categorías.
+model DetalleComprobanteRecibido {
+  id              Int     @id @default(autoincrement())
+  codigoPrincipal String? @map("codigo_principal") @db.VarChar(25)
+  descripcion     String  @db.VarChar(300)
+  cantidad        Decimal @db.Decimal(14, 6)
+  precioUnitario  Decimal @map("precio_unitario") @db.Decimal(14, 6)
+  descuento       Decimal @default(0) @db.Decimal(12, 2)
+  baseImponible   Decimal @map("base_imponible") @db.Decimal(12, 2)
+
+  // Catálogo SRI codigoPorcentaje/tarifa crudo (no el enum TarifaIvaProducto,
+  // que solo admite 0 %/15 % para las facturas EMITIDAS por este sistema;
+  // un comprobante recibido puede traer 5 %, 12 %, 14 %, etc.).
+  tarifaCodigo     String  @map("tarifa_codigo") @db.VarChar(4)
+  tarifaPorcentaje Decimal @map("tarifa_porcentaje") @db.Decimal(5, 2)
+  valorIva         Decimal @map("valor_iva") @db.Decimal(12, 2)
+  total            Decimal @db.Decimal(12, 2)
+
+  metodoClasificacion MetodoClasificacionDetalle? @map("metodo_clasificacion")
+  confianza           Decimal?                    @db.Decimal(5, 2)
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ----- Claves foráneas -----
+  comprobanteRecibidoId Int                 @map("comprobante_recibido_id")
+  comprobanteRecibido   ComprobanteRecibido @relation(fields: [comprobanteRecibidoId], references: [id], onDelete: Cascade)
+
+  categoriaId Int?       @map("categoria_id")
+  categoria   Categoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+
+  reglaCategorizacionId Int?                 @map("regla_categorizacion_id")
+  reglaCategorizacion   ReglaCategorizacion? @relation(fields: [reglaCategorizacionId], references: [id], onDelete: SetNull)
+
+  // Movimiento espejo, creado solo cuando la línea recibe una categoría (por
+  // regla automática al importar o por corrección manual después).
+  movimientoId Int?        @unique @map("movimiento_id")
+  movimiento   Movimiento? @relation(fields: [movimientoId], references: [id], onDelete: SetNull)
+
+  @@index([comprobanteRecibidoId])
+  @@index([categoriaId])
+  @@map("detalles_comprobantes_recibidos")
+}
+
+// ---------- MODELO DE DATOS DE UNA REGLA DE CATEGORIZACIÓN POR PALABRA CLAVE ----------
+// Motor de categorización automática: si la descripción de una línea
+// contiene la palabra clave, se le asigna la categoría indicada. Las reglas
+// personales (usuarioId con valor) tienen prioridad sobre las globales
+// (usuarioId nulo, administradas por un ADMINISTRADOR).
+model ReglaCategorizacion {
+  id           Int                       @id @default(autoincrement())
+  palabraClave String                    @map("palabra_clave") @db.VarChar(150)
+  prioridad    Int                       @default(0)
+  activa       Boolean                   @default(true)
+  origen       OrigenReglaCategorizacion @default(MANUAL)
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // usuarioId nulo = regla GLOBAL administrada por un ADMINISTRADOR.
+  // usuarioId con valor = regla PERSONAL del usuario (creada a mano o
+  // aprendida de una corrección manual).
+  usuarioId Int?     @map("usuario_id")
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  categoriaId Int       @map("categoria_id")
+  categoria   Categoria @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+
+  // ----- Relaciones -----
+  detallesClasificados DetalleComprobanteRecibido[]
+
+  // La ausencia de duplicados por (usuarioId, palabraClave) se valida a
+  // nivel de servicio (findFirst antes de insertar) y no con @@unique:
+  // Postgres no trata dos NULL como iguales en un índice único, así que un
+  // @@unique aquí permitiría duplicar reglas GLOBALES (usuarioId nulo) sin
+  // detectarlo.
+  @@index([usuarioId, activa, prioridad])
+  @@index([categoriaId])
+  @@map("reglas_categorizacion")
+}
+
+// =========================================================================
+// MÓDULO RDEP / FORMULARIO 107 (Retenciones en la Fuente del Impuesto a la
+// Renta por Ingresos del Trabajo en Relación de Dependencia).
+//
+// Nombres de campo, catálogos y reglas tomados de la "Ficha Técnica" oficial
+// del Anexo RDEP publicada por el SRI (sri.gob.ec) — no se inventó ninguna
+// estructura propia para lo que finalmente se transmite al SRI: FINTECH solo
+// aporta su propia interfaz/tabla para capturar estos mismos datos.
+// =========================================================================
+
+// C=Cédula, E=Identificación tributaria del exterior, P=Pasaporte.
+enum TipoIdentificacionTrabajadorRdep {
+  CEDULA
+  IDENTIFICACION_EXTERIOR
+  PASAPORTE
+}
+
+// 01=Residente local, 02=Residente del exterior.
+enum ResidenciaTrabajadorRdep {
+  LOCAL
+  EXTERIOR
+}
+
+// 01=No aplica, 02=Con discapacidad, 03=Sustituto de persona con discapacidad.
+enum CondicionDiscapacidadRdep {
+  NO_APLICA
+  CON_DISCAPACIDAD
+  SUSTITUTO
+}
+
+enum AplicaConvenioDobleImposicionRdep {
+  SI
+  NO
+  NO_APLICA
+}
+
+// 1=Sin sistema de salario neto, 2=Con sistema de salario neto.
+enum SistemaSalarioNetoRdep {
+  SIN_SISTEMA
+  CON_SISTEMA
+}
+
+enum TipoEmpleadorRdep {
+  PRIVADO_MIXTO
+  PUBLICO
+}
+
+enum EnteSeguridadSocialRdep {
+  IESS
+  ISSFA_ISSPOL
+}
+
+// Ciclo de vida interno de FINTECH para cada Formulario 107 / RDEP.
+// BORRADOR: se puede seguir editando. VALIDADO: pasó la validación completa
+// y todavía no se generaron los archivos finales. GENERADO: ya se generaron
+// el PDF de consulta y el anexo Excel oficial; queda de solo lectura.
+enum EstadoFormularioRdep {
+  BORRADOR
+  VALIDADO
+  GENERADO
+}
+
+// Acciones registradas en el historial de auditoría de cada formulario.
+enum AccionHistorialRdep {
+  CREACION
+  ACTUALIZACION
+  VALIDACION_EXITOSA
+  VALIDACION_CON_ERRORES
+  GENERACION_PDF
+  GENERACION_ANEXO_EXCEL
+  CAMBIO_ESTADO
+  ELIMINACION
+}
+
+// ---------- MODELO DE DATOS DE UN FORMULARIO 107 / ANEXO RDEP ----------
+// Un registro por usuario y período fiscal (modelo autoempleado: el
+// "trabajador" y el "empleador" son la misma persona que usa FINTECH).
+model FormularioRdep {
+  id Int @id @default(autoincrement())
+
+  periodoFiscal Int                  @map("periodo_fiscal")
+  estado        EstadoFormularioRdep @default(BORRADOR)
+
+  // ----- Encabezado del empleador (agente de retención) -----
+  tipoEmpleador       TipoEmpleadorRdep       @map("tipo_empleador")
+  enteSeguridadSocial EnteSeguridadSocialRdep @map("ente_seguridad_social")
+
+  // ----- Identificación del trabajador -----
+  tipoIdentificacionTrabajador   TipoIdentificacionTrabajadorRdep  @map("tipo_identificacion_trabajador")
+  numeroIdentificacionTrabajador String                            @map("numero_identificacion_trabajador") @db.VarChar(13)
+  apellidosTrabajador            String                            @map("apellidos_trabajador") @db.VarChar(100)
+  nombresTrabajador              String                            @map("nombres_trabajador") @db.VarChar(100)
+  codigoEstablecimiento          String                            @default("001") @map("codigo_establecimiento") @db.VarChar(3)
+  residenciaTrabajador           ResidenciaTrabajadorRdep           @default(LOCAL) @map("residencia_trabajador")
+  paisResidenciaTrabajador       String                            @default("593") @map("pais_residencia_trabajador") @db.VarChar(3)
+  aplicaConvenioDobleImposicion  AplicaConvenioDobleImposicionRdep @default(NO_APLICA) @map("aplica_convenio_doble_imposicion")
+  condicionDiscapacidad          CondicionDiscapacidadRdep          @default(NO_APLICA) @map("condicion_discapacidad")
+  porcentajeDiscapacidad         Int?                                @map("porcentaje_discapacidad")
+  beneficioGalapagos             Boolean                             @default(false) @map("beneficio_galapagos")
+  enfermedadCatastrofica         Boolean                             @default(false) @map("enfermedad_catastrofica")
+  cargasFamiliares               Int                                 @default(0) @map("cargas_familiares")
+
+  // ----- Ingresos (casilleros 301-317 y 349) -----
+  sueldosSalariosIngresosGravados Decimal @default(0) @map("sueldos_salarios_ingresos_gravados") @db.Decimal(12, 2)
+  otrosIngresosGravados           Decimal @default(0) @map("otros_ingresos_gravados") @db.Decimal(12, 2)
+  participacionUtilidades         Decimal @default(0) @map("participacion_utilidades") @db.Decimal(12, 2)
+  ingresosOtrosEmpleadores        Decimal @default(0) @map("ingresos_otros_empleadores") @db.Decimal(12, 2)
+  decimoTercerSueldo              Decimal @default(0) @map("decimo_tercer_sueldo") @db.Decimal(12, 2)
+  decimoCuartoSueldo              Decimal @default(0) @map("decimo_cuarto_sueldo") @db.Decimal(12, 2)
+  fondoReserva                    Decimal @default(0) @map("fondo_reserva") @db.Decimal(12, 2)
+  otrosIngresosNoGravados         Decimal @default(0) @map("otros_ingresos_no_gravados") @db.Decimal(12, 2)
+  impuestoRentaAsumidoEmpleador   Decimal @default(0) @map("impuesto_renta_asumido_empleador") @db.Decimal(12, 2)
+
+  // ----- Deducciones, gastos personales y exoneraciones (casilleros 351-373) -----
+  sistemaSalarioNeto             SistemaSalarioNetoRdep @default(SIN_SISTEMA) @map("sistema_salario_neto")
+  aportePersonalEsteEmpleador    Decimal                @default(0) @map("aporte_personal_este_empleador") @db.Decimal(12, 2)
+  aportePersonalOtrosEmpleadores Decimal                @default(0) @map("aporte_personal_otros_empleadores") @db.Decimal(12, 2)
+  gastoVivienda                  Decimal                @default(0) @map("gasto_vivienda") @db.Decimal(12, 2)
+  gastoSalud                     Decimal                @default(0) @map("gasto_salud") @db.Decimal(12, 2)
+  gastoEducacion                 Decimal                @default(0) @map("gasto_educacion") @db.Decimal(12, 2)
+  gastoAlimentacion              Decimal                @default(0) @map("gasto_alimentacion") @db.Decimal(12, 2)
+  gastoVestimenta                Decimal                @default(0) @map("gasto_vestimenta") @db.Decimal(12, 2)
+  gastoTurismo                   Decimal                @default(0) @map("gasto_turismo") @db.Decimal(12, 2)
+  exoneracionDiscapacidad        Decimal                @default(0) @map("exoneracion_discapacidad") @db.Decimal(12, 2)
+  exoneracionTerceraEdad         Decimal                @default(0) @map("exoneracion_tercera_edad") @db.Decimal(12, 2)
+
+  // ----- Impuesto ya retenido/asumido reportado por otros canales (casilleros 404-405) -----
+  impuestoRetenidoAsumidoOtrosEmpleadores Decimal @default(0) @map("impuesto_retenido_asumido_otros_empleadores") @db.Decimal(12, 2)
+  impuestoAsumidoEsteEmpleador            Decimal @default(0) @map("impuesto_asumido_este_empleador") @db.Decimal(12, 2)
+
+  // Canasta Familiar Básica (diciembre, INEC) usada para calcular la rebaja
+  // por gastos personales de este período. Se pide como dato porque cambia
+  // cada año y el sistema no debe inventar ni asumir un valor desactualizado.
+  canastaBasicaMensual Decimal @map("canasta_basica_mensual") @db.Decimal(10, 2)
+
+  // ----- Resumen impositivo (casilleros 399, 401-403, 407) -----
+  // Estos 4 campos jamás se reciben del cliente: siempre los calcula el
+  // backend a partir de los campos anteriores (RdepCalculoService).
+  baseImponibleGravada                    Decimal @default(0) @map("base_imponible_gravada") @db.Decimal(12, 2)
+  impuestoRentaCausado                    Decimal @default(0) @map("impuesto_renta_causado") @db.Decimal(12, 2)
+  rebajaGastosPersonales                  Decimal @default(0) @map("rebaja_gastos_personales") @db.Decimal(12, 2)
+  impuestoRentaCausadoDespuesRebaja       Decimal @default(0) @map("impuesto_renta_causado_despues_rebaja") @db.Decimal(12, 2)
+  impuestoRetenidoTrabajadorEsteEmpleador Decimal @default(0) @map("impuesto_retenido_trabajador_este_empleador") @db.Decimal(12, 2)
+
+  // ----- Trazabilidad -----
+  validadoEn         DateTime? @map("validado_en")
+  generadoEn         DateTime? @map("generado_en")
+  usuarioGeneradorId Int?      @map("usuario_generador_id")
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ----- Claves foráneas -----
+  usuarioId Int     @map("usuario_id")
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  perfilTributarioId Int              @map("perfil_tributario_id")
+  perfilTributario   PerfilTributario @relation(fields: [perfilTributarioId], references: [id], onDelete: Restrict)
+
+  // ----- Relaciones -----
+  historial HistorialFormularioRdep[]
+
+  // Un mismo usuario no puede tener dos formularios para el mismo período.
+  @@unique([usuarioId, periodoFiscal])
+  @@index([usuarioId, estado, periodoFiscal])
+  @@map("formularios_rdep")
+}
+
+// ---------- HISTORIAL / AUDITORÍA DE UN FORMULARIO RDEP ----------
+model HistorialFormularioRdep {
+  id      Int                  @id @default(autoincrement())
+  accion  AccionHistorialRdep
+  // Descripción legible del cambio (p. ej. lista de campos modificados o
+  // los errores de validación encontrados en ese momento).
+  detalle String?              @db.Text
+
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  // ----- Claves foráneas -----
+  formularioRdepId Int            @map("formulario_rdep_id")
+  formularioRdep   FormularioRdep @relation(fields: [formularioRdepId], references: [id], onDelete: Cascade)
+
+  usuarioId Int     @map("usuario_id")
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([formularioRdepId, creadoEn])
+  @@map("historial_formularios_rdep")
+}

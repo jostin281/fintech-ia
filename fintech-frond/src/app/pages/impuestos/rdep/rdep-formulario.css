@@ -1,0 +1,581 @@
+/* ══════════════════════════════════════════════════════
+   FORMULARIO 107 / RDEP — acoplado a la estética
+   "cyber-fintech glassmorphism neon" del resto de Impuestos
+   (ver impuestos.css: fondo #030712, paneles rgba(15,23,42,.65)
+   con blur, acentos cian #00f2fe / violeta #a855f7).
+══════════════════════════════════════════════════════ */
+
+.rdep-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-size: 0.92rem;
+  color: #cbd5e1;
+}
+
+.rdep-cargando {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  color: #94a3b8;
+}
+
+.rdep-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: 4px;
+}
+
+.rdep-encabezado h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+/* Chips de estado, mismos tonos que .badge-status-* de impuestos.css. */
+.chip-borrador,
+.chip-validado,
+.chip-generado {
+  font-weight: 700 !important;
+}
+
+.chip-borrador {
+  background: rgba(148, 163, 184, 0.15) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.chip-validado {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.chip-generado {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.rdep-aviso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: #22d3ee;
+}
+
+.rdep-aviso-plantilla {
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.rdep-aviso-plantilla span {
+  flex: 1 1 260px;
+}
+
+.rdep-aviso-plantilla ::ng-deep .mat-mdc-outlined-button {
+  color: #22d3ee !important;
+  border-color: rgba(34, 211, 238, 0.4) !important;
+  flex-shrink: 0;
+}
+
+/* ── Panel de autocompletar (Formulario 107) ── */
+.rdep-autocomplete-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.10) 0%, rgba(168, 85, 247, 0.08) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  border-radius: 14px;
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.rdep-autocomplete-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.rdep-autocomplete-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rdep-autocomplete-icon {
+  color: #22d3ee !important;
+  font-size: 1.4rem;
+}
+
+.rdep-autocomplete-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.rdep-autocomplete-hint {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-left: auto;
+}
+
+.rdep-autocomplete-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.rdep-btn-autocomplete {
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  border-radius: 10px !important;
+  padding: 6px 18px !important;
+  background: linear-gradient(90deg, #0891b2 0%, #6d28d9 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 16px rgba(0, 242, 254, 0.18);
+  transition: filter 0.2s, box-shadow 0.2s;
+}
+
+.rdep-btn-autocomplete:hover:not([disabled]) {
+  filter: brightness(1.12);
+  box-shadow: 0 4px 24px rgba(0, 242, 254, 0.28);
+}
+
+.rdep-btn-autocomplete[disabled] {
+  opacity: 0.5 !important;
+}
+
+.rdep-autocomplete-sep {
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.rdep-autocomplete-desc {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  flex: 1 1 200px;
+}
+
+.rdep-mensaje {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  font-size: 0.82rem;
+}
+
+.rdep-mensaje-error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.rdep-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.rdep-seccion {
+  width: 100%;
+}
+
+/* Tarjetas de cristal oscuro (glassmorphism), iguales a .glass-panel /
+   .kpi-card del resto de la pantalla, en vez del blanco por defecto de
+   Angular Material. */
+.rdep-seccion ::ng-deep .mdc-card,
+.rdep-seccion ::ng-deep .mat-mdc-card {
+  background-color: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(16px);
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.rdep-seccion:hover ::ng-deep .mdc-card,
+.rdep-seccion:hover ::ng-deep .mat-mdc-card {
+  border-color: rgba(0, 242, 254, 0.25);
+}
+
+/* Tarjeta de resultado de validación: borde con brillo verde si pasó,
+   rojo si encontró errores. */
+.rdep-validacion-ok ::ng-deep .mdc-card,
+.rdep-validacion-ok ::ng-deep .mat-mdc-card {
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.12);
+}
+
+.rdep-validacion-error ::ng-deep .mdc-card,
+.rdep-validacion-error ::ng-deep .mat-mdc-card {
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.12);
+}
+
+/* Espaciado más generoso en la tipografía interna de mat-card (compacto
+   sin quedar apretado). */
+.rdep-seccion ::ng-deep .mat-mdc-card-header {
+  padding: 16px 18px 6px;
+}
+
+.rdep-seccion ::ng-deep .mat-mdc-card-title {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: #f8fafc !important;
+  letter-spacing: 0.01em;
+}
+
+.rdep-seccion ::ng-deep .mat-mdc-card-content {
+  padding: 10px 18px 18px !important;
+  color: #cbd5e1;
+}
+
+.rdep-seccion ::ng-deep .mat-mdc-card-content:first-child {
+  padding-top: 16px !important;
+}
+
+/* Con subscriptSizing="dynamic" (fijado en rdep-formulario.ts) el espacio
+   reservado para hints/errores desaparece cuando no hace falta. */
+.rdep-formulario ::ng-deep .mat-mdc-form-field {
+  width: 100%;
+}
+
+.rdep-formulario ::ng-deep .mat-mdc-text-field-wrapper {
+  padding-top: 6px;
+}
+
+/* Checkboxes: texto claro sobre la tarjeta oscura, con algo de aire. */
+.rdep-formulario ::ng-deep .mat-mdc-checkbox {
+  margin-top: 4px;
+}
+
+.rdep-formulario ::ng-deep .mat-mdc-checkbox label {
+  color: #cbd5e1;
+}
+
+.rdep-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 16px 20px;
+  align-items: start;
+}
+
+/* Casilleros calculados: mismo estilo que .kpi-card. */
+.rdep-resumen-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  transition: transform 0.2s;
+}
+
+.rdep-resumen-item:hover {
+  transform: translateY(-2px);
+}
+
+.rdep-resumen-item strong {
+  color: #f1f5f9;
+  font-family: monospace;
+  font-size: 0.95rem;
+}
+
+.rdep-resumen-final {
+  background: rgba(0, 242, 254, 0.08);
+  border: 1px solid rgba(0, 242, 254, 0.35);
+  box-shadow: 0 0 12px rgba(0, 242, 254, 0.15);
+}
+
+.rdep-resumen-final strong {
+  color: #00f2fe;
+  font-size: 1rem;
+}
+
+.rdep-error-item {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rdep-error-item ::ng-deep .mdc-list-item__content,
+.rdep-historial-item ::ng-deep .mdc-list-item__content {
+  padding: 0;
+}
+
+.rdep-formulario ::ng-deep .mat-mdc-list-item {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.rdep-error-detalle,
+.rdep-historial-detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 2px;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+.rdep-error-detalle strong {
+  color: #f87171;
+}
+
+.rdep-historial-detalle strong {
+  color: #22d3ee;
+}
+
+.rdep-error-valor {
+  color: #94a3b8;
+}
+
+.rdep-error-fix {
+  color: #34d399;
+  font-weight: 600;
+}
+
+.rdep-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.rdep-acciones ::ng-deep .mat-mdc-button,
+.rdep-acciones ::ng-deep .mat-mdc-unelevated-button,
+.rdep-acciones ::ng-deep .mat-mdc-outlined-button {
+  --mdc-text-button-container-height: 36px;
+  --mdc-filled-button-container-height: 36px;
+  --mdc-outlined-button-container-height: 36px;
+  font-size: 0.82rem;
+  padding: 0 16px !important;
+  border-radius: 9px !important;
+  transition: box-shadow 0.2s, transform 0.15s, background 0.2s, border-color 0.2s;
+}
+
+/* Botones principales (Crear/Guardar y Generar) con el mismo degradado
+   con brillo que .btn-create / .btn-action-glow del resto de la app, en
+   vez del relleno plano de Material. */
+.rdep-acciones ::ng-deep .mat-mdc-unelevated-button.mat-primary {
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%) !important;
+  color: #030712 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+}
+
+.rdep-acciones ::ng-deep .mat-mdc-unelevated-button.mat-primary:hover {
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
+}
+
+.rdep-acciones ::ng-deep .mat-mdc-unelevated-button.mat-accent {
+  background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%) !important;
+  color: #030712 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+}
+
+.rdep-acciones ::ng-deep .mat-mdc-unelevated-button.mat-accent:hover {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+}
+
+/* "Volver al listado", "Validar", "Vista previa PDF" y "Ver historial" son
+   botones neutros (mat-stroked-button / mat-button, sin color="primary"):
+   se fija su color a mano para que se lean bien sobre el glass-panel. */
+.rdep-acciones ::ng-deep .mat-mdc-button:not(.mat-primary):not(.mat-accent),
+.rdep-acciones ::ng-deep .mat-mdc-outlined-button:not(.mat-primary):not(.mat-accent) {
+  color: #cbd5e1 !important;
+}
+
+.rdep-acciones ::ng-deep .mat-mdc-outlined-button:not(.mat-primary):not(.mat-accent) {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.rdep-acciones ::ng-deep .mat-mdc-outlined-button:not(.mat-primary):not(.mat-accent):hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   MODO CLARO (".theme-light", agregada por ThemeService a
+   <html>/<body> con el interruptor global de la app): mismos
+   componentes de arriba, pero con la paleta clara/blanca del
+   resto de las pantallas en modo claro (ver styles.css).
+══════════════════════════════════════════════════════ */
+
+.theme-light .rdep-encabezado h3 {
+  color: #0f172a;
+}
+
+.theme-light .chip-borrador {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1;
+}
+
+.theme-light .chip-validado {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a;
+}
+
+.theme-light .chip-generado {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0;
+}
+
+.theme-light .rdep-aviso {
+  background: #e0f2fe;
+  border: 1px solid #7dd3fc;
+  color: #0284c7;
+}
+
+.theme-light .rdep-mensaje {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.theme-light .rdep-mensaje-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.theme-light .rdep-seccion ::ng-deep .mdc-card,
+.theme-light .rdep-seccion ::ng-deep .mat-mdc-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.92) 100%) !important;
+  color: #334155 !important;
+  border: 1px solid rgba(191, 219, 254, 0.7);
+  box-shadow: 0 10px 30px -5px rgba(37, 99, 235, 0.07), 0 4px 12px -2px rgba(6, 182, 212, 0.04);
+}
+
+.theme-light .rdep-seccion:hover ::ng-deep .mdc-card,
+.theme-light .rdep-seccion:hover ::ng-deep .mat-mdc-card {
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.theme-light .rdep-validacion-ok ::ng-deep .mdc-card,
+.theme-light .rdep-validacion-ok ::ng-deep .mat-mdc-card {
+  border: 1px solid rgba(5, 150, 105, 0.45) !important;
+  box-shadow: 0 0 16px rgba(5, 150, 105, 0.1);
+}
+
+.theme-light .rdep-validacion-error ::ng-deep .mdc-card,
+.theme-light .rdep-validacion-error ::ng-deep .mat-mdc-card {
+  border: 1px solid rgba(220, 38, 38, 0.4) !important;
+  box-shadow: 0 0 16px rgba(220, 38, 38, 0.1);
+}
+
+.theme-light .rdep-seccion ::ng-deep .mat-mdc-card-title {
+  color: #0f172a !important;
+}
+
+.theme-light .rdep-seccion ::ng-deep .mat-mdc-card-content {
+  color: #334155 !important;
+}
+
+.theme-light .rdep-formulario ::ng-deep .mat-mdc-checkbox label {
+  color: #334155;
+}
+
+.theme-light .rdep-resumen-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.theme-light .rdep-resumen-item strong {
+  color: #0f172a;
+}
+
+.theme-light .rdep-resumen-final {
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.12);
+}
+
+.theme-light .rdep-resumen-final strong {
+  color: #2563eb;
+}
+
+.theme-light .rdep-error-item {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.theme-light .rdep-error-detalle,
+.theme-light .rdep-historial-detalle {
+  color: #334155;
+}
+
+.theme-light .rdep-error-detalle strong {
+  color: #dc2626;
+}
+
+.theme-light .rdep-historial-detalle strong {
+  color: #0284c7;
+}
+
+.theme-light .rdep-error-valor {
+  color: #64748b;
+}
+
+.theme-light .rdep-error-fix {
+  color: #059669;
+}
+
+.theme-light .rdep-acciones ::ng-deep .mat-mdc-unelevated-button.mat-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+}
+
+.theme-light .rdep-acciones ::ng-deep .mat-mdc-unelevated-button.mat-primary:hover {
+  box-shadow: 0 8px 26px rgba(37, 99, 235, 0.45);
+}
+
+.theme-light .rdep-acciones ::ng-deep .mat-mdc-unelevated-button.mat-accent {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
+}
+
+.theme-light .rdep-acciones ::ng-deep .mat-mdc-unelevated-button.mat-accent:hover {
+  box-shadow: 0 8px 26px rgba(124, 58, 237, 0.45);
+}
+
+.theme-light .rdep-acciones ::ng-deep .mat-mdc-button:not(.mat-primary):not(.mat-accent),
+.theme-light .rdep-acciones ::ng-deep .mat-mdc-outlined-button:not(.mat-primary):not(.mat-accent) {
+  color: #334155 !important;
+}
+
+.theme-light .rdep-acciones ::ng-deep .mat-mdc-outlined-button:not(.mat-primary):not(.mat-accent) {
+  border-color: #cbd5e1 !important;
+}
+
+.theme-light .rdep-acciones ::ng-deep .mat-mdc-outlined-button:not(.mat-primary):not(.mat-accent):hover {
+  background: #eff6ff !important;
+  border-color: #93c5fd !important;
+}

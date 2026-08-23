@@ -1,0 +1,780 @@
+<!-- ══════════════════════════════════════════════════════
+     FACTURACIÓN ELECTRÓNICA SRI ECUADOR — conectado al backend real
+══════════════════════════════════════════════════════ -->
+<div class="page-root">
+
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <canvas #neuralCanvas style="position:absolute;inset:0;width:100%;height:100%;opacity:0.85;z-index:0;"></canvas>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <a routerLink="/dashboard" class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+    <div class="header-center">
+      <h1 class="page-title flex items-center gap-2">
+        Facturación Electrónica SRI <span class="flag-icon">🇪🇨</span>
+      </h1>
+      @if (listoParaEmitir()) {
+        <span class="header-badge connected flex items-center gap-1.5">
+          <span class="pulse-dot bg-emerald-400"></span>
+          ✅ Perfil y firma listos para emitir
+        </span>
+      } @else {
+        <span class="header-badge disconnected flex items-center gap-1.5">
+          <span class="pulse-dot bg-amber-400"></span>
+          ⚡ Completa perfil tributario y firma electrónica para emitir
+        </span>
+      }
+    </div>
+    <div class="header-actions">
+      <button class="btn-sync" (click)="openFacturaModal()" [disabled]="!listoParaEmitir() && clientes().length === 0">
+        🧾 Nueva Factura
+      </button>
+    </div>
+  </header>
+
+  <main class="page-main">
+
+    @if (!perfil()) {
+      <div class="sri-connect-banner">
+        <div class="banner-icon animate-pulse">🏢</div>
+        <div class="banner-info">
+          <h3 class="banner-title">Primero crea tu perfil tributario</h3>
+          <p class="banner-sub">Necesitas registrar tu <strong>RUC</strong>, razón social y régimen tributario (General, RIMPE Emprendedor o RIMPE Negocio Popular) antes de emitir comprobantes.</p>
+        </div>
+        <button class="btn-banner-connect" (click)="openPerfilForm()">Crear Perfil Tributario →</button>
+      </div>
+    } @else if (!firma()) {
+      <div class="sri-connect-banner">
+        <div class="banner-icon animate-pulse">🔐</div>
+        <div class="banner-info">
+          <h3 class="banner-title">Carga tu firma electrónica (.p12 / .pfx)</h3>
+          <p class="banner-sub">El SRI exige firmar cada comprobante con tu certificado de firma electrónica vigente antes de poder enviarlo.</p>
+        </div>
+        <button class="btn-banner-connect" (click)="openFirmaModal()">Cargar Firma Electrónica →</button>
+      </div>
+    }
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card cyan">
+        <div class="kpi-icon">🧾</div>
+        <div>
+          <p class="kpi-label">Facturas Autorizadas</p>
+          <p class="kpi-value">{{ facturasAutorizadas() }} <span class="kpi-curr">comprobantes</span></p>
+        </div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-icon">💵</div>
+        <div>
+          <p class="kpi-label">Total Facturado (Autorizadas)</p>
+          <p class="kpi-value text-purple-300">${{ totalFacturado() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
+        </div>
+      </div>
+      <div class="kpi-card emerald">
+        <div class="kpi-icon">📊</div>
+        <div>
+          <p class="kpi-label">IVA 15% Generado</p>
+          <p class="kpi-value text-emerald-400">${{ totalIvaGenerado() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="toolbar">
+      <div class="filter-pills">
+        <button (click)="setTab('facturas')" [class.active]="tab() === 'facturas'" class="filter-pill">Facturas <span class="pill-cnt">{{ facturas().length }}</span></button>
+        <button (click)="setTab('clientes')" [class.active]="tab() === 'clientes'" class="filter-pill cyan">Clientes <span class="pill-cnt">{{ clientes().length }}</span></button>
+        <button (click)="setTab('productos')" [class.active]="tab() === 'productos'" class="filter-pill purple">Productos/Servicios <span class="pill-cnt">{{ productos().length }}</span></button>
+        <button (click)="setTab('retenciones')" [class.active]="tab() === 'retenciones'" class="filter-pill">Retenciones Recibidas <span class="pill-cnt">{{ retenciones().length }}</span></button>
+        <button (click)="setTab('comprobantes-recibidos')" [class.active]="tab() === 'comprobantes-recibidos'" class="filter-pill cyan">📥 Comprobantes Recibidos <span class="pill-cnt">{{ comprobantesRecibidos().length }}</span></button>
+        <button (click)="openPerfilForm()" [class.active]="tab() === 'perfil'" class="filter-pill">⚙️ Perfil Tributario</button>
+      </div>
+    </div>
+
+    @if (cargando()) {
+      <div class="table-card"><div class="empty-state"><p class="empty-sub">Cargando...</p></div></div>
+    } @else {
+
+      <!-- FACTURAS -->
+      @if (tab() === 'facturas') {
+        <div class="table-card">
+          @if (facturas().length === 0) {
+            <div class="empty-state">
+              <div class="empty-icon">🧾</div>
+              <h3 class="empty-title">Todavía no has emitido facturas</h3>
+              <p class="empty-sub">Crea clientes y productos, y luego pulsa "Nueva Factura".</p>
+            </div>
+          } @else {
+            <table class="facturas-table">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Cliente</th>
+                  <th>Estado SRI</th>
+                  <th class="text-right">Total ($ USD)</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (f of facturas(); track f.id) {
+                  <tr>
+                    <td>
+                      <span class="folio-tag">{{ f.numero || 'BORRADOR #' + f.id }}</span>
+                      @if (f.claveAcceso) {
+                        <p class="text-[10px] text-slate-500 font-mono mt-1">{{ f.claveAcceso.slice(0, 22) }}...</p>
+                      }
+                    </td>
+                    <td>
+                      <p class="font-bold text-white text-xs mb-0.5">{{ f.comprador.razonSocial }}</p>
+                      <p class="text-[11px] text-slate-400 font-mono">{{ f.comprador.identificacion }}</p>
+                    </td>
+                    <td>
+                      <span class="sri-status-chip" [class.pending]="f.estado === 'BORRADOR' || f.estado === 'FIRMADA' || f.estado === 'RECIBIDA'">
+                        <span class="pulse-dot-sm" [class.bg-emerald-400]="f.estado === 'AUTORIZADA'" [class.bg-amber-400]="f.estado !== 'AUTORIZADA'"></span>
+                        {{ f.estado }}
+                      </span>
+                    </td>
+                    <td class="text-right">
+                      <p class="font-bold text-white text-sm">${{ f.totales.importeTotal | number:'1.2-2' }}</p>
+                      <p class="text-[10px] text-slate-400">Sub: ${{ f.totales.totalSinImpuestos | number:'1.2-2' }} + IVA ${{ f.totales.iva | number:'1.2-2' }}</p>
+                    </td>
+                    <td>
+                      <div class="flex items-center justify-center gap-2 flex-wrap">
+                        @if (f.estado === 'BORRADOR') {
+                          <button class="btn-action-xml" [disabled]="!listoParaEmitir() || guardando()" (click)="emitirFactura(f.id)" title="Firmar y enviar al SRI">🚀 Emitir</button>
+                          <button class="btn-action-xml" (click)="anularBorrador(f.id)" title="Anular borrador">🗑️</button>
+                        }
+                        @if (f.estado === 'AUTORIZADA' || f.estado === 'RECIBIDA') {
+                          <button class="btn-action-ride" (click)="descargarRide(f.id)" title="Descargar RIDE PDF">RIDE</button>
+                          <button class="btn-action-xml" (click)="descargarXml(f.id)" title="Descargar XML firmado">XML</button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      }
+
+      <!-- CLIENTES -->
+      @if (tab() === 'clientes') {
+        <div class="toolbar"><button class="btn-create" (click)="openClienteModal()">+ Nuevo Cliente</button></div>
+        <div class="table-card">
+          @if (clientes().length === 0) {
+            <div class="empty-state"><div class="empty-icon">👤</div><h3 class="empty-title">Sin clientes registrados</h3></div>
+          } @else {
+            <table class="facturas-table">
+              <thead><tr><th>Identificación</th><th>Razón Social</th><th>Correo</th><th class="text-center">Acciones</th></tr></thead>
+              <tbody>
+                @for (c of clientes(); track c.id) {
+                  <tr>
+                    <td><span class="font-mono text-xs">{{ c.tipoIdentificacion }}: {{ c.identificacion }}</span></td>
+                    <td>{{ c.razonSocial }}</td>
+                    <td>{{ c.correo || '—' }}</td>
+                    <td class="text-center"><button class="btn-action-xml" (click)="eliminarCliente(c.id)">🗑️</button></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      }
+
+      <!-- PRODUCTOS -->
+      @if (tab() === 'productos') {
+        <div class="toolbar"><button class="btn-create" (click)="openProductoModal()">+ Nuevo Producto/Servicio</button></div>
+        <div class="table-card">
+          @if (productos().length === 0) {
+            <div class="empty-state"><div class="empty-icon">📦</div><h3 class="empty-title">Sin productos registrados</h3></div>
+          } @else {
+            <table class="facturas-table">
+              <thead><tr><th>Código</th><th>Descripción</th><th class="text-right">Precio</th><th>IVA</th><th class="text-center">Acciones</th></tr></thead>
+              <tbody>
+                @for (p of productos(); track p.id) {
+                  <tr>
+                    <td class="font-mono text-xs">{{ p.codigoPrincipal }}</td>
+                    <td>{{ p.descripcion }}</td>
+                    <td class="text-right">${{ p.precioUnitario }}</td>
+                    <td>{{ p.tarifaIva === 'QUINCE' ? '15%' : '0%' }}</td>
+                    <td class="text-center"><button class="btn-action-xml" (click)="eliminarProducto(p.id)">🗑️</button></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      }
+
+      <!-- RETENCIONES RECIBIDAS -->
+      @if (tab() === 'retenciones') {
+        <div class="toolbar"><button class="btn-create" (click)="openRetencionModal()">+ Registrar Retención</button></div>
+        <div class="table-card">
+          @if (retenciones().length === 0) {
+            <div class="empty-state"><div class="empty-icon">📄</div><h3 class="empty-title">Sin retenciones registradas</h3>
+              <p class="empty-sub">Registra aquí los comprobantes de retención que tus clientes te entregan al pagarte.</p>
+            </div>
+          } @else {
+            <table class="facturas-table">
+              <thead><tr><th>Tipo</th><th>Emisor</th><th>Comprobante</th><th class="text-right">Valor</th><th class="text-center">Acciones</th></tr></thead>
+              <tbody>
+                @for (r of retenciones(); track r.id) {
+                  <tr>
+                    <td>{{ r.tipo }}</td>
+                    <td class="font-mono text-xs">{{ r.emisorIdentificacion }}</td>
+                    <td>{{ r.numeroComprobante }}</td>
+                    <td class="text-right">${{ r.valor }}</td>
+                    <td class="text-center"><button class="btn-action-xml" (click)="eliminarRetencion(r.id)">🗑️</button></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      }
+
+      <!-- COMPROBANTES RECIBIDOS (facturas de compra/gasto importadas del SRI) -->
+      @if (tab() === 'comprobantes-recibidos') {
+        <div class="toolbar">
+          <input
+            class="form-input"
+            style="max-width: 320px;"
+            placeholder="Buscar por RUC, razón social o número..."
+            [value]="comprobantesBusqueda()"
+            (input)="comprobantesBusqueda.set($any($event.target).value)"
+          />
+          <button class="btn-create" (click)="openImportComprobantesModal()">+ Importar XML del SRI</button>
+        </div>
+        <div class="notice-card cyan">
+          ℹ️ Sube aquí los XML de tus facturas de compra/gasto descargadas desde
+          <strong>SRI en Línea → Comprobantes Electrónicos Recibidos</strong>. No pedimos ni guardamos tu
+          usuario ni contraseña del SRI: solo leemos los archivos que ya tienes.
+        </div>
+        <div class="table-card">
+          @if (comprobantesRecibidosFiltrados().length === 0) {
+            <div class="empty-state">
+              <div class="empty-icon">📥</div>
+              <h3 class="empty-title">Sin comprobantes recibidos</h3>
+              <p class="empty-sub">Importa los XML de tus facturas de compra para clasificarlas y llevar el gasto al día.</p>
+            </div>
+          } @else {
+            <table class="facturas-table">
+              <thead>
+                <tr>
+                  <th>Proveedor</th>
+                  <th>Número</th>
+                  <th>Fecha</th>
+                  <th class="text-right">Subtotal</th>
+                  <th class="text-right">IVA</th>
+                  <th class="text-right">Total</th>
+                  <th>Categoría</th>
+                  <th>Estado</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of comprobantesRecibidosFiltrados(); track c.id) {
+                  <tr>
+                    <td>
+                      <p class="font-bold text-white text-xs mb-0.5">{{ c.razonSocialEmisor }}</p>
+                      <p class="text-[11px] text-slate-400 font-mono">{{ c.rucEmisor }}</p>
+                    </td>
+                    <td class="font-mono text-xs">{{ c.numero }}</td>
+                    <td>{{ c.fechaEmision | date:'dd/MM/yyyy' }}</td>
+                    <td class="text-right">${{ c.subtotalSinImpuestos }}</td>
+                    <td class="text-right">${{ c.iva }}</td>
+                    <td class="text-right"><p class="font-bold text-white text-sm">${{ c.importeTotal }}</p></td>
+                    <td>
+                      <span [class.text-amber-400]="c.categoria === 'Sin categorizar'" [class.text-cyan-400]="c.categoria === 'Múltiples'">
+                        {{ c.categoria }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="sri-status-chip" [class.pending]="c.estado === 'ERROR_XML' || c.estado === 'PENDIENTE' || c.estado === 'PROCESANDO'">
+                        <span class="pulse-dot-sm" [class.bg-emerald-400]="c.estado === 'PROCESADO'" [class.bg-amber-400]="c.estado !== 'PROCESADO'"></span>
+                        {{ c.estado }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="flex items-center justify-center gap-2 flex-wrap">
+                        <button class="btn-action-xml" (click)="verDesglose(c.id)" title="Ver desglose">📊</button>
+                        <button class="btn-action-xml" (click)="verXml(c.id)" title="Ver XML original">👁️</button>
+                        <button class="btn-action-xml" (click)="descargarXmlComprobante(c.id)" title="Descargar XML">XML</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      }
+
+      <!-- PERFIL TRIBUTARIO -->
+      @if (tab() === 'perfil') {
+        <div class="table-card" style="padding: 1.5rem;">
+          <div class="form-group">
+            <label class="form-label">Tipo de Identificación</label>
+            <select class="form-input" [value]="perfilForm().tipoIdentificacion" (change)="setTipoIdentificacionPerfil($any($event.target).value)">
+              <option value="RUC">RUC</option>
+              <option value="CEDULA">Cédula</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{ perfilForm().tipoIdentificacion === 'CEDULA' ? 'Cédula (10 dígitos)' : 'RUC (13 dígitos)' }}</label>
+            <input class="form-input font-mono" [attr.maxlength]="perfilForm().tipoIdentificacion === 'CEDULA' ? 10 : 13" [value]="perfilForm().ruc" (input)="updatePerfilForm('ruc', $any($event.target).value)" />
+            @if (perfilForm().tipoIdentificacion === 'CEDULA') {
+              <p class="form-hint">Se registrará como RUC de persona natural agregando "001": {{ perfilForm().ruc || '__________' }}001</p>
+            }
+          </div>
+          <div class="form-group">
+            <label class="form-label">Razón Social</label>
+            <input class="form-input" [value]="perfilForm().razonSocial" (input)="updatePerfilForm('razonSocial', $any($event.target).value)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nombre Comercial (opcional)</label>
+            <input class="form-input" [value]="perfilForm().nombreComercial" (input)="updatePerfilForm('nombreComercial', $any($event.target).value)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dirección Matriz</label>
+            <input class="form-input" [value]="perfilForm().direccionMatriz" (input)="updatePerfilForm('direccionMatriz', $any($event.target).value)" />
+          </div>
+          <div class="form-row form-cols-2">
+            <div class="form-group">
+              <label class="form-label">Tipo de Contribuyente</label>
+              <select class="form-input" [value]="perfilForm().tipoContribuyente" [disabled]="perfilForm().tipoIdentificacion === 'CEDULA'" (change)="updatePerfilForm('tipoContribuyente', $any($event.target).value)">
+                <option value="PERSONA_NATURAL">Persona Natural</option>
+                <option value="SOCIEDAD">Sociedad</option>
+              </select>
+              @if (perfilForm().tipoIdentificacion === 'CEDULA') {
+                <p class="form-hint">La cédula solo aplica a persona natural.</p>
+              }
+            </div>
+            <div class="form-group">
+              <label class="form-label">Régimen Tributario</label>
+              <select class="form-input" [value]="perfilForm().regimenTributario" (change)="updatePerfilForm('regimenTributario', $any($event.target).value)">
+                <option value="GENERAL">General</option>
+                <option value="RIMPE_EMPRENDEDOR">RIMPE Emprendedor</option>
+                <option value="RIMPE_NEGOCIO_POPULAR">RIMPE Negocio Popular</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ambiente SRI</label>
+              <select class="form-input" [value]="perfilForm().ambienteSri" (change)="updatePerfilForm('ambienteSri', $any($event.target).value)">
+                <option value="PRUEBAS">🔵 PRUEBAS (desarrollo y testing)</option>
+                <option value="PRODUCCION">🔴 PRODUCCION (facturas reales al SRI)</option>
+              </select>
+              <span class="form-help">
+                @if (perfilForm().ambienteSri === 'PRODUCCION') {
+                  ⚠️ En modo PRODUCCIÓN las facturas que emitas se envían al SRI real de Ecuador y generan obligación tributaria.
+                } @else {
+                  ✅ En modo PRUEBAS las facturas no tienen validez tributaria — ideal para desarrollo.
+                }
+              </span>
+            </div>
+          </div>
+          <button class="btn-save mt-2" [disabled]="guardando()" (click)="guardarPerfil()">{{ guardando() ? 'Guardando...' : (perfil() ? 'Actualizar Perfil' : 'Crear Perfil') }}</button>
+
+          @if (firma()) {
+            <div class="notice-card cyan mt-4">
+              🔐 Firma electrónica activa: <strong>{{ firma()!.nombreArchivo }}</strong> · vigente hasta {{ firma()!.validoHasta | date:'dd/MM/yyyy' }}
+              @if (firma()!.proximaACaducar) { <span class="text-amber-400"> · ¡Vence pronto!</span> }
+              <button class="btn-action-xml ml-2" (click)="desactivarFirma()">Desactivar</button>
+            </div>
+          } @else if (perfil()) {
+            <div class="notice-card amber mt-4">
+              ⚠️ No has cargado tu firma electrónica. <button class="btn-action-xml ml-2" (click)="openFirmaModal()">Cargar ahora</button>
+            </div>
+          }
+        </div>
+      }
+    }
+
+  </main>
+
+  <!-- MODAL: CLIENTE -->
+  @if (showClienteModal()) {
+    <div class="modal-backdrop" (click)="closeClienteModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header"><h3 class="modal-title">Nuevo Cliente</h3><button class="btn-close" (click)="closeClienteModal()">✕</button></div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Tipo de Identificación</label>
+            <select class="form-input" [value]="clienteForm().tipoIdentificacion" (change)="updateClienteForm('tipoIdentificacion', $any($event.target).value)">
+              <option value="CEDULA">Cédula</option>
+              <option value="RUC">RUC</option>
+              <option value="PASAPORTE">Pasaporte</option>
+              <option value="CONSUMIDOR_FINAL">Consumidor Final</option>
+              <option value="IDENTIFICACION_EXTERIOR">Identificación del Exterior</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Número de Identificación</label>
+            <input class="form-input font-mono" [value]="clienteForm().identificacion" (input)="updateClienteForm('identificacion', $any($event.target).value)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Razón Social / Nombre</label>
+            <input class="form-input" [value]="clienteForm().razonSocial" (input)="updateClienteForm('razonSocial', $any($event.target).value)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Correo (opcional)</label>
+            <input class="form-input" type="email" [value]="clienteForm().correo" (input)="updateClienteForm('correo', $any($event.target).value)" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeClienteModal()">Cancelar</button>
+          <button class="btn-save" [disabled]="guardando()" (click)="guardarCliente()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: PRODUCTO -->
+  @if (showProductoModal()) {
+    <div class="modal-backdrop" (click)="closeProductoModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header"><h3 class="modal-title">Nuevo Producto / Servicio</h3><button class="btn-close" (click)="closeProductoModal()">✕</button></div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Código Principal</label>
+            <input class="form-input font-mono" [value]="productoForm().codigoPrincipal" (input)="updateProductoForm('codigoPrincipal', $any($event.target).value)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descripción</label>
+            <input class="form-input" [value]="productoForm().descripcion" (input)="updateProductoForm('descripcion', $any($event.target).value)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Precio Unitario (sin IVA)</label>
+            <input class="form-input" placeholder="100.00" [value]="productoForm().precioUnitario" (input)="updateProductoForm('precioUnitario', $any($event.target).value)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tarifa de IVA</label>
+            <select class="form-input" [value]="productoForm().tarifaIva" (change)="updateProductoForm('tarifaIva', $any($event.target).value)">
+              <option value="QUINCE">15%</option>
+              <option value="CERO">0%</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeProductoModal()">Cancelar</button>
+          <button class="btn-save" [disabled]="guardando()" (click)="guardarProducto()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: NUEVA FACTURA -->
+  @if (showFacturaModal()) {
+    <div class="modal-backdrop" (click)="closeFacturaModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header"><h3 class="modal-title">Nueva Factura</h3><button class="btn-close" (click)="closeFacturaModal()">✕</button></div>
+        <div class="modal-body">
+          @if (clientes().length === 0 || productos().length === 0) {
+            <div class="notice-card amber">⚠️ Necesitas al menos un cliente y un producto/servicio registrados.</div>
+          } @else {
+            <div class="form-group">
+              <label class="form-label">Cliente</label>
+              <select class="form-input" [value]="facturaClienteId()" (change)="facturaClienteId.set(+$any($event.target).value)">
+                @for (c of clientes(); track c.id) { <option [value]="c.id">{{ c.razonSocial }} ({{ c.identificacion }})</option> }
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Producto / Servicio</label>
+              <select class="form-input" [value]="facturaProductoId()" (change)="facturaProductoId.set(+$any($event.target).value)">
+                @for (p of productos(); track p.id) { <option [value]="p.id">{{ p.descripcion }} · ${{ p.precioUnitario }}</option> }
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cantidad</label>
+              <input class="form-input" [value]="facturaCantidad()" (input)="facturaCantidad.set($any($event.target).value)" />
+            </div>
+            <div class="notice-card cyan">ℹ️ Se creará como borrador. Luego pulsa "🚀 Emitir" para firmarla y enviarla al SRI.</div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeFacturaModal()">Cancelar</button>
+          <button class="btn-save" [disabled]="guardando() || clientes().length === 0 || productos().length === 0" (click)="crearFactura()">Crear Borrador</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: FIRMA ELECTRÓNICA -->
+  @if (showFirmaModal()) {
+    <div class="modal-backdrop" (click)="closeFirmaModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header"><h3 class="modal-title">Cargar Firma Electrónica 🔐</h3><button class="btn-close" (click)="closeFirmaModal()">✕</button></div>
+        <div class="modal-body">
+          <div class="notice-card cyan">ℹ️ Sube tu archivo de firma electrónica (.p12 o .pfx) emitido por una entidad certificadora ecuatoriana (Banco Central, Security Data, etc.).</div>
+          <div class="form-group">
+            <label class="form-label">Archivo .p12 / .pfx</label>
+            <input class="form-input" type="file" accept=".p12,.pfx" (change)="onFirmaArchivoSeleccionado($event)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contraseña del Certificado</label>
+            <input class="form-input" type="password" [value]="firmaClave()" (input)="firmaClave.set($any($event.target).value)" />
+          </div>
+          <div class="notice-card amber">🔒 La contraseña no se almacena; el certificado se guarda cifrado (AES-256-GCM) en el backend.</div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeFirmaModal()">Cancelar</button>
+          <button class="btn-save" [disabled]="guardando()" (click)="guardarFirma()">Guardar Firma</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: RETENCIÓN RECIBIDA -->
+  @if (showRetencionModal()) {
+    <div class="modal-backdrop" (click)="closeRetencionModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header"><h3 class="modal-title">Registrar Retención Recibida</h3><button class="btn-close" (click)="closeRetencionModal()">✕</button></div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <select class="form-input" [value]="retencionForm().tipo" (change)="updateRetencionForm('tipo', $any($event.target).value)">
+              <option value="RENTA">Retención de Renta</option>
+              <option value="IVA">Retención de IVA</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Identificación del Cliente que Retuvo</label>
+            <input class="form-input font-mono" [value]="retencionForm().emisorIdentificacion" (input)="updateRetencionForm('emisorIdentificacion', $any($event.target).value)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">N° de Comprobante</label>
+            <input class="form-input" placeholder="001-001-000000123" [value]="retencionForm().numeroComprobante" (input)="updateRetencionForm('numeroComprobante', $any($event.target).value)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha de Emisión</label>
+            <input class="form-input" type="date" [value]="retencionForm().fechaEmision" (input)="updateRetencionForm('fechaEmision', $any($event.target).value)" />
+          </div>
+          <div class="form-row form-cols-3">
+            <div class="form-group">
+              <label class="form-label">Base Imponible</label>
+              <input class="form-input" placeholder="100.00" [value]="retencionForm().baseImponible" (input)="updateRetencionForm('baseImponible', $any($event.target).value)" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Porcentaje %</label>
+              <input class="form-input" placeholder="2.75" [value]="retencionForm().porcentaje" (input)="updateRetencionForm('porcentaje', $any($event.target).value)" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Valor Retenido</label>
+              <input class="form-input" placeholder="2.75" [value]="retencionForm().valor" (input)="updateRetencionForm('valor', $any($event.target).value)" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeRetencionModal()">Cancelar</button>
+          <button class="btn-save" [disabled]="guardando()" (click)="guardarRetencion()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: IMPORTAR COMPROBANTES RECIBIDOS (XML DEL SRI) -->
+  @if (showImportComprobantesModal()) {
+    <div class="modal-backdrop" (click)="closeImportComprobantesModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">📥 Importar XML del SRI</h3>
+          <button class="btn-close" (click)="closeImportComprobantesModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="text-[12px] text-slate-400 mb-3">
+            Sube los archivos XML de tus facturas de compra/gasto descargadas desde
+            <strong>SRI en Línea → Comprobantes Electrónicos Recibidos</strong>. Cada línea de cada
+            factura se clasifica automáticamente por tus reglas de categorización; las que no
+            coincidan quedarán "Sin categorizar" hasta que las corrijas manualmente.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Archivos XML</label>
+            <input type="file" class="form-input" multiple accept=".xml" (change)="onImportComprobantesFilesSelected($event)" />
+            @if (importComprobantesArchivos().length > 0) {
+              <p class="text-[11px] text-cyan-400 mt-1">{{ importComprobantesArchivos().length }} archivo(s) seleccionado(s)</p>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeImportComprobantesModal()">Cancelar</button>
+          <button
+            class="btn-save"
+            [disabled]="importandoComprobantes() || importComprobantesArchivos().length === 0"
+            (click)="confirmarImportacionComprobantes()"
+          >
+            {{ importandoComprobantes() ? 'Importando...' : 'Importar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: VISOR DE XML ORIGINAL (SOLO LECTURA) -->
+  @if (showXmlModal()) {
+    <div class="modal-backdrop" (click)="closeXmlModal()">
+      <div class="modal-card" style="max-width: 720px;" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">XML Original (comprobante #{{ xmlComprobanteId() }})</h3>
+          <button class="btn-close" (click)="closeXmlModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          @if (cargandoXml()) {
+            <p class="empty-sub">Cargando...</p>
+          } @else {
+            <textarea
+              class="form-input font-mono"
+              style="min-height: 360px; resize: vertical; white-space: pre;"
+              readonly
+              [value]="xmlContenido() || ''"
+            ></textarea>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="copiarXml()" [disabled]="!xmlContenido()">Copiar</button>
+          @if (xmlComprobanteId()) {
+            <button class="btn-save" (click)="descargarXmlComprobante(xmlComprobanteId()!)">Descargar</button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: DESGLOSE DE COMPROBANTE Y CORRECCIÓN DE CATEGORÍA POR LÍNEA -->
+  @if (showDesgloseModal()) {
+    <div class="modal-backdrop" (click)="closeDesgloseModal()">
+      <div class="modal-card" style="max-width: 860px;" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Desglose de Factura</h3>
+          <button class="btn-close" (click)="closeDesgloseModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          @if (cargandoDesglose() || !desglose()) {
+            <p class="empty-sub">Cargando...</p>
+          } @else {
+            <div class="mb-3">
+              <p class="font-bold text-white text-sm">{{ desglose()!.comprobante.razonSocialEmisor }}</p>
+              <p class="text-[11px] text-slate-400 font-mono">
+                RUC {{ desglose()!.comprobante.rucEmisor }} ·
+                {{ desglose()!.comprobante.establecimiento }}-{{ desglose()!.comprobante.puntoEmision }}-{{ desglose()!.comprobante.secuencial }} ·
+                {{ desglose()!.comprobante.fechaEmision | date:'dd/MM/yyyy' }}
+              </p>
+              @if (desglose()!.comprobante.mensajeError) {
+                <div class="notice-card amber mt-2">⚠️ {{ desglose()!.comprobante.mensajeError }}</div>
+              }
+            </div>
+
+            <table class="facturas-table">
+              <thead>
+                <tr>
+                  <th>Descripción</th>
+                  <th class="text-right">Cant.</th>
+                  <th class="text-right">P. Unit.</th>
+                  <th class="text-right">Total</th>
+                  <th>Categoría</th>
+                  <th>Recordar corrección</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (d of desglose()!.comprobante.detalles; track d.id) {
+                  <tr>
+                    <td>{{ d.descripcion }}</td>
+                    <td class="text-right">{{ d.cantidad }}</td>
+                    <td class="text-right">${{ d.precioUnitario }}</td>
+                    <td class="text-right">${{ d.total }}</td>
+                    <td>
+                      <select
+                        class="form-input"
+                        style="min-width: 160px;"
+                        [value]="d.categoriaId ?? ''"
+                        [disabled]="actualizandoDetalleId() === d.id"
+                        (change)="actualizarCategoriaLinea(d.id, $any($event.target).value)"
+                      >
+                        <option value="" disabled>Sin categorizar</option>
+                        @for (cat of userData.categoriasGasto(); track cat.id) {
+                          <option [value]="cat.id">{{ cat.nombre }}</option>
+                        }
+                      </select>
+                      @if (d.metodoClasificacion) {
+                        <p class="text-[10px] text-slate-500 mt-1">{{ d.metodoClasificacion }}</p>
+                      }
+                    </td>
+                    <td>
+                      <div class="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          [checked]="correccionDeLinea(d.id).recordar"
+                          (change)="toggleRecordarCorreccion(d.id, d.descripcion)"
+                        />
+                        @if (correccionDeLinea(d.id).recordar) {
+                          <input
+                            class="form-input"
+                            style="min-width: 120px;"
+                            placeholder="palabra clave"
+                            [value]="correccionDeLinea(d.id).palabraClave"
+                            (input)="actualizarPalabraClaveCorreccion(d.id, $any($event.target).value)"
+                          />
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+
+            <div class="form-row form-cols-2 mt-4">
+              <div>
+                <h4 class="text-xs font-bold text-slate-300 mb-2">Bases IVA por tarifa</h4>
+                @for (b of desglose()!.basesIva; track b.tarifaCodigo) {
+                  <p class="text-[12px] text-slate-400">Tarifa {{ b.tarifaPorcentaje }}%: base ${{ b.base }} · IVA ${{ b.iva }}</p>
+                }
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-slate-300 mb-2">Distribución por categoría</h4>
+                @for (dc of desglose()!.distribucionCategorias; track dc.categoria) {
+                  <p class="text-[12px] text-slate-400">{{ dc.categoria }}: ${{ dc.total }} ({{ dc.porcentaje }}%)</p>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeDesgloseModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TOAST -->
+  @if (toastMessage()) {
+    <div class="toast-notification">{{ toastMessage() }}</div>
+  }
+
+  <!-- FLOATING TIP CARD -->
+  @if (showTipWidget()) {
+    <div class="floating-tip-card">
+      <div class="tip-header">
+        <div class="flex items-center gap-2"><span class="tip-icon">🇪🇨</span><span class="tip-title">Tip Fiscal SRI Ecuador</span></div>
+        <button class="btn-close-tip" (click)="showTipWidget.set(false)" title="Cerrar consejo">✕</button>
+      </div>
+      <p class="tip-body">
+        <strong>Ambiente de pruebas:</strong> Mientras <code>SRI_PRODUCCION_HABILITADA</code> sea <code>false</code> en el backend, tus facturas se firman y envían al ambiente de <strong>pruebas</strong> del SRI, nunca a producción real.
+      </p>
+    </div>
+  }
+
+</div>

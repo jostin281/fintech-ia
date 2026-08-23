@@ -1,0 +1,190 @@
+<!-- ══════════════════════════════════════════════════════
+     ASISTENTE IA CON GEMINI API
+══════════════════════════════════════════════════════ -->
+<div class="page-root">
+
+  <!-- FONDO ESTÁTICO LIMPIO SIN ANIMACIONES -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- HEADER HEADER -->
+  <header class="page-header">
+    <a routerLink="/dashboard" class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+    <div class="header-center">
+      <div class="ai-avatar-glowing" [class.gemini-active]="geminiActivo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="page-title">Copiloto Financiero IA</h1>
+          @if (geminiActivo()) {
+            <span class="model-badge gemini font-bold">✨ Gemini Live AI</span>
+          } @else {
+            <span class="model-badge">Motor de reglas local</span>
+          }
+        </div>
+        <p class="header-sub">
+          <span class="status-pulse" [class.gemini]="geminiActivo()"></span>
+          {{ iniciando() ? 'Conectando con el backend...' : 'Conectado a tu backend fintech-back' }}
+        </p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-clear-chat" (click)="abrirModalClave()" title="Configurar tu clave de Gemini">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        {{ claveGeminiGuardada() ? 'Clave Gemini' : 'Configurar Gemini' }}
+      </button>
+      <button class="btn-clear-chat" (click)="nuevaConversacion()" title="Iniciar una nueva conversación">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Nueva conversación
+      </button>
+    </div>
+  </header>
+
+  <main class="chat-main">
+    
+    <!-- ÁREA DE MENSAJES CON SCROLL -->
+    <div class="chat-container" #chatContainer>
+      
+      <!-- Lista de Mensajes -->
+      <div class="messages-list">
+        @for (msg of messages(); track msg.id) {
+          <div class="message-wrapper" [class.user]="msg.sender === 'user'" [class.ai]="msg.sender === 'ai'">
+            @if (msg.sender === 'ai') {
+              <div class="msg-avatar ai-avatar" [class.gemini]="msg.isGemini">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+            }
+            <div class="msg-bubble" [class.gemini-bubble]="msg.isGemini">
+              @if (msg.isGemini) {
+                <div class="gemini-tag">✨ Google Gemini Response</div>
+              }
+              <div class="msg-text whitespace-pre-line">{{ msg.text }}</div>
+              <span class="msg-time">{{ msg.time }}</span>
+            </div>
+            @if (msg.sender === 'user') {
+              <div class="msg-avatar user-avatar">
+                U
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Indicador Escribiendo -->
+        @if (isTyping()) {
+          <div class="message-wrapper ai">
+            <div class="msg-avatar ai-avatar animate-pulse">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="msg-bubble typing-bubble">
+              <span class="text-xs text-purple-300 mr-2 font-mono">
+                Procesando consulta...
+              </span>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- BOTTON INPUT AREA Y SUGERENCIAS -->
+    <div class="chat-bottom">
+      
+      <!-- Chips de Sugerencias -->
+      @if (messages().length <= 2 && !isTyping()) {
+        <div class="suggestions-wrap">
+          <p class="suggestions-title">💡 ¿Qué deseas consultar o hacer en tus pantallas?</p>
+          <div class="suggestions-grid">
+            @for (sug of suggestions; track sug.label) {
+              <button class="suggestion-card group" (click)="sendMessage(sug.prompt)">
+                <span class="sug-label">{{ sug.label }}</span>
+                <svg class="w-3.5 h-3.5 text-purple-400 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Barra de Entrada -->
+      <div class="input-area">
+        <input
+          type="text"
+          class="chat-input"
+          placeholder="Pregunta sobre cualquier pantalla (Dashboard, Presupuestos, Facturas SRI ECU, Metas, Reportes)..."
+          [value]="inputMessage()"
+          (input)="updateInput($event)"
+          (keyup.enter)="sendMessage()"
+          [disabled]="isTyping() || iniciando()"
+        />
+        <button class="btn-send" [class.active]="inputMessage().trim().length > 0" (click)="sendMessage()" [disabled]="isTyping() || iniciando() || inputMessage().trim().length === 0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+      <p class="footer-note">
+        ✦ Conectado a fintech-back ·
+        {{ geminiActivo() ? 'Respuestas potenciadas por Google Gemini' : claveGeminiGuardada() ? 'Tienes una clave de Gemini guardada' : 'Motor de reglas local' }}
+        @if (!claveGeminiGuardada()) {
+          · <button type="button" class="underline text-purple-300 hover:text-purple-200" (click)="abrirModalClave()">configura tu clave de Gemini</button>
+        }
+      </p>
+    </div>
+
+  </main>
+
+  <!-- MODAL: CONFIGURAR CLAVE DE GEMINI -->
+  @if (mostrarModalClave()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" (click)="cerrarModalClave()">
+      <div class="w-full max-w-md rounded-2xl border border-purple-500/30 bg-slate-900 p-5 shadow-xl" (click)="$event.stopPropagation()">
+        <h2 class="text-lg font-bold text-white mb-1">Tu clave de Google Gemini</h2>
+        <p class="text-xs text-slate-400 mb-4">Pégala aquí para que el asistente responda con IA generativa en lugar del motor de reglas local.</p>
+
+        <label class="text-xs text-slate-300 mb-1 block">Clave (Google AI Studio)</label>
+        <div class="flex gap-2">
+          <input
+            [type]="mostrarClaveTexto() ? 'text' : 'password'"
+            class="chat-input flex-1"
+            placeholder="AIza..."
+            [value]="claveGeminiInput()"
+            (input)="claveGeminiInput.set($any($event.target).value)"
+          />
+          <button type="button" class="btn-clear-chat" (click)="toggleMostrarClaveTexto()">
+            {{ mostrarClaveTexto() ? '👁️' : '👁️‍🗨️' }}
+          </button>
+        </div>
+
+        @if (errorClave()) {
+          <p class="text-xs text-red-400 mt-2">{{ errorClave() }}</p>
+        }
+
+        <div class="p-3 mt-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-xs text-purple-300">
+          🔒 Se guarda asociada a tu cuenta y solo se usa en tus propias conversaciones. Consíguela gratis en <strong>aistudio.google.com</strong>.
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4">
+          @if (claveGeminiGuardada()) {
+            <button type="button" class="btn-clear-chat" [disabled]="guardandoClave()" (click)="quitarClaveGemini()">Quitar clave</button>
+          }
+          <button type="button" class="btn-clear-chat" [disabled]="guardandoClave()" (click)="cerrarModalClave()">Cancelar</button>
+          <button type="button" class="btn-send active" [disabled]="guardandoClave()" (click)="guardarClaveGemini()">
+            {{ guardandoClave() ? 'Guardando…' : 'Guardar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TOAST -->
+  @if (toastMessage()) {
+    <div class="toast-notification">
+      {{ toastMessage() }}
+    </div>
+  }
+
+</div>

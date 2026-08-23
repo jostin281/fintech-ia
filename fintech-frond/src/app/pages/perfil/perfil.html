@@ -1,0 +1,375 @@
+<!-- ══════════════════════════════════════════════════════
+     PERFIL
+══════════════════════════════════════════════════════ -->
+<div class="page-root">
+
+  <!-- FONDO ESTÁTICO LIMPIO SIN ANIMACIONES -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <a routerLink="/dashboard" class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+    <h1 class="page-title">Mi Perfil</h1>
+    <div class="header-actions">
+      @if (saveSuccess()) {
+        <span class="save-badge">✓ Cambios guardados</span>
+      }
+      <button class="btn-logout" (click)="logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+  </header>
+
+  <main class="page-main">
+
+    <!-- ── COLUMNA IZQUIERDA: Avatar + Stats + Actividad ── -->
+    <aside class="left-col">
+
+      <!-- Card avatar -->
+      <div class="avatar-card">
+        <div class="avatar-glow"></div>
+        <div class="avatar-ring">
+          <div class="avatar-circle">{{ userInitials() }}</div>
+        </div>
+        <h2 class="avatar-name">{{ user()?.name ?? 'Usuario' }}</h2>
+        <p class="avatar-email">{{ user()?.email ?? '' }}</p>
+        <div class="avatar-badge">
+          <span class="dot-pulse"></span>
+          Plan Pro · Activo
+        </div>
+        <button class="btn-edit-avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Cambiar foto
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        @for (s of stats(); track s.label) {
+          <div class="stat-card" [style.--accent]="s.color">
+            <div class="stat-icon">
+              @switch (s.icon) {
+                @case ('swap') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+                }
+                @case ('chart') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+                }
+                @case ('target') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                }
+                @case ('money') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                }
+              }
+            </div>
+            <p class="stat-value">{{ s.value }}</p>
+            <p class="stat-label">{{ s.label }}</p>
+          </div>
+        }
+      </div>
+
+      <!-- Actividad reciente -->
+      <div class="activity-card">
+        <h3 class="section-title">Actividad reciente</h3>
+        <ul class="activity-list">
+          @for (item of activity; track item.time) {
+            <li class="activity-item">
+              <div class="activity-dot" [style.background]="item.color"></div>
+              <div class="activity-body">
+                <p class="activity-action">{{ item.action }}</p>
+                <p class="activity-time">{{ item.time }}</p>
+              </div>
+            </li>
+          }
+        </ul>
+      </div>
+    </aside>
+
+    <!-- ── COLUMNA DERECHA: Tabs + Formularios ── -->
+    <section class="right-col">
+
+      <!-- Tabs -->
+      <div class="tabs-bar">
+        <button class="tab-btn" [class.active]="activeTab() === 'general'" (click)="setTab('general')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          General
+        </button>
+        <button class="tab-btn" [class.active]="activeTab() === 'seguridad'" (click)="setTab('seguridad')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Seguridad
+        </button>
+        <button class="tab-btn" [class.active]="activeTab() === 'preferencias'" (click)="setTab('preferencias')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preferencias
+        </button>
+      </div>
+
+      <!-- TAB: GENERAL -->
+      @if (activeTab() === 'general') {
+        <div class="tab-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Información personal</h2>
+              <p class="panel-sub">Actualiza tu nombre, correo y datos de contacto.</p>
+            </div>
+            <button class="btn-edit" (click)="toggleEdit()">
+              @if (editMode()) {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                Cancelar
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Editar
+              }
+            </button>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Nombre completo</label>
+              <input class="form-input" [class.editable]="editMode()" [readonly]="!editMode()"
+                [value]="user()?.name ?? ''" placeholder="Tu nombre completo"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Correo electrónico</label>
+              <input class="form-input" [class.editable]="editMode()" [readonly]="!editMode()"
+                [value]="user()?.email ?? ''" type="email" placeholder="correo@empresa.com"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Teléfono</label>
+              <input class="form-input" [class.editable]="editMode()" [readonly]="!editMode()"
+                value="+593 99 123 4567" placeholder="+593 99 000 0000"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Empresa</label>
+              <input class="form-input" [class.editable]="editMode()" [readonly]="!editMode()"
+                value="Mi Empresa S.A." placeholder="Nombre de la empresa"/>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">RUC / Identificación Fiscal</label>
+              <input class="form-input font-mono" [class.editable]="editMode()" [readonly]="!editMode()"
+                value="1799999990001" placeholder="RUC de la empresa"/>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Dirección fiscal</label>
+              <input class="form-input" [class.editable]="editMode()" [readonly]="!editMode()"
+                value="Av. Amazonas N34-123, Quito, Ecuador 🇪🇨" placeholder="Dirección fiscal"/>
+            </div>
+          </div>
+
+          @if (editMode()) {
+            <div class="form-actions">
+              <button class="btn-save" (click)="saveChanges()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+                Guardar cambios
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- TAB: SEGURIDAD -->
+      @if (activeTab() === 'seguridad') {
+        <div class="tab-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Seguridad de la cuenta</h2>
+              <p class="panel-sub">Administra tu contraseña y los accesos activos.</p>
+            </div>
+          </div>
+
+          @if (mensajeSeguridad()) {
+            <div class="p-3 mb-4 rounded-xl text-xs flex items-center gap-2"
+              [class.bg-emerald-500\/10]="!errorSeguridad()" [class.border-emerald-500\/20]="!errorSeguridad()" [class.text-emerald-300]="!errorSeguridad()"
+              [class.bg-red-500\/10]="errorSeguridad()" [class.border-red-500\/20]="errorSeguridad()" [class.text-red-300]="errorSeguridad()">
+              {{ mensajeSeguridad() }}
+            </div>
+          }
+
+          <!-- Cambiar contraseña -->
+          <div class="security-section">
+            <div class="security-item-header">
+              <div class="security-icon cyan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <div>
+                <h3 class="security-title">Contraseña</h3>
+                <p class="security-sub">Protege tu cuenta actualizando periódicamente tu clave.</p>
+              </div>
+              <span class="security-badge good">Segura</span>
+            </div>
+            <div class="form-grid mt-4">
+              <div class="form-group full">
+                <label class="form-label">Contraseña actual</label>
+                <input
+                  class="form-input editable"
+                  type="password"
+                  placeholder="••••••••"
+                  [value]="contrasenaActual()"
+                  (input)="contrasenaActual.set($any($event.target).value)"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nueva contraseña</label>
+                <input
+                  class="form-input editable"
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  [value]="nuevaContrasena()"
+                  (input)="nuevaContrasena.set($any($event.target).value)"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirmar nueva contraseña</label>
+                <input
+                  class="form-input editable"
+                  type="password"
+                  placeholder="Repite la contraseña"
+                  [value]="confirmarContrasena()"
+                  (input)="confirmarContrasena.set($any($event.target).value)"
+                />
+              </div>
+            </div>
+            <button class="btn-save mt-4" (click)="actualizarContrasena()" [disabled]="guardandoContrasena()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+              {{ guardandoContrasena() ? 'Actualizando…' : 'Actualizar contraseña' }}
+            </button>
+          </div>
+
+          <!-- 2FA -->
+          <div class="security-section">
+            <div class="security-item-header">
+              <div class="security-icon purple">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+              <div>
+                <h3 class="security-title">Autenticación de dos factores</h3>
+                <p class="security-sub">Agrega una capa extra de seguridad a tu cuenta.</p>
+              </div>
+              <span class="security-badge" [class.good]="twoFactorActivo()" [class.warn]="!twoFactorActivo()">
+                {{ twoFactorActivo() ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+            <button class="btn-2fa" (click)="toggleTwoFactor()">
+              {{ twoFactorActivo() ? 'Desactivar 2FA' : 'Activar 2FA' }}
+            </button>
+          </div>
+
+          <!-- Sesiones activas -->
+          <div class="security-section">
+            <h3 class="security-title mb-3">Sesiones activas</h3>
+            <div class="session-list">
+              @for (s of sesiones(); track s.id) {
+                <div class="session-item" [class.current]="s.actual">
+                  <div class="session-icon">{{ s.dispositivo.includes('Phone') ? '📱' : '💻' }}</div>
+                  <div class="session-body">
+                    <p class="session-name">
+                      {{ s.dispositivo }}
+                      @if (s.actual) { <span class="current-tag">Actual</span> }
+                    </p>
+                    <p class="session-meta">Ecuador · {{ s.fecha }} · {{ s.ip }}</p>
+                  </div>
+                  @if (!s.actual) {
+                    <button class="session-revoke" (click)="revocarSesion(s.id)">Revocar</button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- TAB: PREFERENCIAS -->
+      @if (activeTab() === 'preferencias') {
+        <div class="tab-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Preferencias</h2>
+              <p class="panel-sub">Personaliza la experiencia de tu plataforma.</p>
+            </div>
+          </div>
+
+          <div class="prefs-list">
+            <div class="pref-row">
+              <div class="pref-info">
+                <p class="pref-name">Notificaciones por correo</p>
+                <p class="pref-desc">Recibe resúmenes semanales y alertas importantes.</p>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked/>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+            <div class="pref-row">
+              <div class="pref-info">
+                <p class="pref-name">Alertas de presupuesto</p>
+                <p class="pref-desc">Avisa cuando un presupuesto supera el 80% del límite.</p>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked/>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+            <div class="pref-row">
+              <div class="pref-info">
+                <p class="pref-name">Análisis automático con IA</p>
+                <p class="pref-desc">El asistente analiza tus finanzas cada semana.</p>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked/>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+            <div class="pref-row">
+              <div class="pref-info">
+                <p class="pref-name">Modo oscuro</p>
+                <p class="pref-desc">Cambia la interfaz entre el modo oscuro y modo claro en toda la plataforma.</p>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [checked]="themeService.isDarkMode()" (change)="themeService.toggleTheme()"/>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+            <div class="pref-row">
+              <div class="pref-info">
+                <p class="pref-name">Moneda principal</p>
+                <p class="pref-desc">Moneda usada en todos los reportes y gráficas.</p>
+              </div>
+              <select class="pref-select">
+                <option value="USD">USD — Dólar (Ecuador 🇪🇨)</option>
+                <option value="EUR">EUR — Euro</option>
+              </select>
+            </div>
+            <div class="pref-row">
+              <div class="pref-info">
+                <p class="pref-name">Idioma de la plataforma</p>
+                <p class="pref-desc">Idioma en el que se muestran los textos.</p>
+              </div>
+              <select
+                class="pref-select"
+                [value]="lang()"
+                (change)="setLang($any($event.target).value)"
+              >
+                <option value="es">Español</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-save" (click)="saveChanges()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+              Guardar preferencias
+            </button>
+          </div>
+        </div>
+      }
+    </section>
+  </main>
+</div>

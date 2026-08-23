@@ -1,0 +1,88 @@
+<div class="rdep-listado">
+  <div class="rdep-listado-encabezado">
+    <h3>Formulario 107 / RDEP — Períodos fiscales</h3>
+    <button mat-flat-button color="primary" (click)="nuevo.emit()">
+      <mat-icon>add</mat-icon> Nuevo período
+    </button>
+  </div>
+
+  @if (mensaje()) {
+    <p class="rdep-listado-mensaje">{{ mensaje() }}</p>
+  }
+
+  @if (cargando()) {
+    <div class="rdep-listado-cargando">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else if (formularios().length === 0) {
+    <p class="rdep-listado-vacio">
+      Todavía no tienes ningún Formulario 107 / RDEP registrado. Crea uno con "Nuevo período".
+    </p>
+  } @else {
+    <table mat-table [dataSource]="formularios()" class="rdep-tabla">
+      <ng-container matColumnDef="periodoFiscal">
+        <th mat-header-cell *matHeaderCellDef>Período</th>
+        <td mat-cell *matCellDef="let f">{{ f.periodoFiscal }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="estado">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let f">
+          <mat-chip-set>
+            @switch (f.estado) {
+              @case ('BORRADOR') {
+                <mat-chip class="chip-borrador">Borrador</mat-chip>
+              }
+              @case ('VALIDADO') {
+                <mat-chip class="chip-validado">Validado</mat-chip>
+              }
+              @case ('GENERADO') {
+                <mat-chip class="chip-generado">Generado</mat-chip>
+              }
+            }
+          </mat-chip-set>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="baseImponibleGravada">
+        <th mat-header-cell *matHeaderCellDef>Base imponible (399)</th>
+        <td mat-cell *matCellDef="let f">{{ f.baseImponibleGravada }} USD</td>
+      </ng-container>
+
+      <ng-container matColumnDef="impuestoRetenido">
+        <th mat-header-cell *matHeaderCellDef>Retenido (407)</th>
+        <td mat-cell *matCellDef="let f">{{ f.impuestoRetenidoTrabajadorEsteEmpleador }} USD</td>
+      </ng-container>
+
+      <ng-container matColumnDef="generadoEn">
+        <th mat-header-cell *matHeaderCellDef>Generado</th>
+        <td mat-cell *matCellDef="let f">{{ f.generadoEn ? (f.generadoEn | date: 'short') : '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <td mat-cell *matCellDef="let f">
+          <button mat-icon-button matTooltip="Ver / editar" (click)="editar.emit(f.id)">
+            <mat-icon>{{ f.estado === 'GENERADO' ? 'visibility' : 'edit' }}</mat-icon>
+          </button>
+          <button mat-icon-button matTooltip="Descargar PDF" (click)="descargarPdf(f)">
+            <mat-icon>picture_as_pdf</mat-icon>
+          </button>
+          @if (f.estado === 'GENERADO') {
+            <button mat-icon-button matTooltip="Descargar anexo RDEP (.xlsx)" (click)="descargarAnexoExcel(f)">
+              <mat-icon>table_view</mat-icon>
+            </button>
+          }
+          @if (f.estado === 'BORRADOR') {
+            <button mat-icon-button matTooltip="Eliminar borrador" (click)="eliminar(f)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          }
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+      <tr mat-row *matRowDef="let row; columns: columnas"></tr>
+    </table>
+  }
+</div>

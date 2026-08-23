@@ -1,0 +1,587 @@
+<div class="relative h-screen bg-[#070a13] text-white font-sans antialiased flex overflow-hidden selection:bg-cyan-500 selection:text-black">
+
+  <!-- FONDO -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <!-- Canvas neuronal (mismo efecto que bienvenida) -->
+    <canvas #neuralCanvas style="position:absolute;inset:0;width:100%;height:100%;opacity:0.85;z-index:0;"></canvas>
+    <!-- Orbes de luz grises -->
+    <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-slate-600/15 via-slate-700/10 to-slate-500/15 rounded-full blur-[140px] animate-orb-pulse"></div>
+    <div class="absolute bottom-0 left-0 w-[450px] h-[450px] bg-slate-500/10 rounded-full blur-[130px] animate-orb-pulse" style="animation-delay:2.5s"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-slate-600/8 via-slate-700/5 to-slate-500/8 rounded-full blur-[120px]"></div>
+  </div>
+
+  <!-- ═══════════════ PANEL IZQUIERDO ═══════════════ -->
+  <aside class="relative z-10 hidden lg:flex lg:w-[46%] xl:w-[44%] flex-col h-full p-8 xl:p-10 border-r border-white/5 animate-slide-left overflow-hidden">
+
+    <!-- Logo -->
+    <a routerLink="/bienvenida" class="flex items-center gap-2.5 group w-fit flex-shrink-0">
+      <div class="w-8 h-8">
+        <svg class="w-full h-full text-cyan-400 group-hover:text-cyan-300 transition-colors drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]"
+             viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6">
+          <polygon points="50,5 90,27.5 90,72.5 50,95 10,72.5 10,27.5" fill="rgba(6,182,212,0.15)"/>
+          <path d="M35 50L45 60L65 40" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="text-xl font-extrabold tracking-tight">Fintech<span class="text-cyan-400">AI</span></span>
+    </a>
+
+    <!-- Titular -->
+    <div class="mt-6 flex-shrink-0">
+      <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-xs font-semibold text-cyan-300 mb-3">
+        <span class="relative flex h-1.5 w-1.5">
+          <span class="animate-ping absolute h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-400"></span>
+        </span>
+        IA Financiera Activa
+      </div>
+      <h2 class="text-2xl xl:text-3xl font-extrabold tracking-tight leading-tight">
+        Inteligencia Artificial<br>para tus
+        <span class="bg-gradient-to-r from-cyan-400 via-blue-300 to-purple-400 bg-clip-text text-transparent"> Finanzas</span>
+      </h2>
+      <p class="text-slate-400 text-sm mt-2 leading-relaxed">
+        Analiza movimientos, predice tendencias y optimiza tu presupuesto automáticamente.
+      </p>
+    </div>
+
+    <!-- ── CARRUSEL ── -->
+    <div class="flex-1 flex flex-col justify-end min-h-0 mt-5">
+      <!-- Contenedor carrusel — ocupa el espacio restante -->
+      <div
+        class="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_40px_rgba(6,182,212,0.1)] bg-slate-950/60 flex-1 min-h-0"
+        (mouseenter)="pauseCarousel()"
+        (mouseleave)="resumeCarousel()"
+      >
+        @for (slide of carouselSlides; track slide.id; let i = $index) {
+          <div
+            class="absolute inset-0 transition-all duration-700 ease-in-out"
+            [style.opacity]="activeCarousel() === i ? '1' : '0'"
+            [style.transform]="activeCarousel() === i ? 'scale(1)' : 'scale(1.03)'"
+            [style.pointer-events]="activeCarousel() === i ? 'auto' : 'none'"
+          >
+            <div class="absolute inset-0" [innerHTML]="slide.svgScene"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+
+            <!-- Badge -->
+            <div class="absolute top-3 left-3">
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold backdrop-blur-sm"
+                [style.background]="slide.badgeBg" [style.color]="slide.badgeColor" [style.border]="'1px solid '+slide.badgeBorder">
+                <span class="w-1.5 h-1.5 rounded-full" [style.background]="slide.badgeColor"></span>
+                {{ slide.badge }}
+              </span>
+            </div>
+
+            <!-- Texto inferior -->
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-xs font-semibold uppercase tracking-widest" [style.color]="slide.accentColor">{{ slide.category }}</p>
+              <h3 class="text-sm font-extrabold text-white leading-snug mt-0.5">{{ slide.title }}</h3>
+              <p class="mt-0.5 text-xs text-slate-400 leading-relaxed line-clamp-2">{{ slide.description }}</p>
+            </div>
+          </div>
+        }
+
+        <!-- Flechas -->
+        <button type="button" (click)="prevCarousel()"
+          class="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full flex items-center justify-center bg-black/40 border border-white/15 text-white hover:bg-black/70 transition-all cursor-pointer">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button type="button" (click)="nextCarousel()"
+          class="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full flex items-center justify-center bg-black/40 border border-white/15 text-white hover:bg-black/70 transition-all cursor-pointer">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+
+        <!-- Barra de progreso -->
+        <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10 z-20">
+          <div class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 carousel-progress-bar"
+            [style.animation-duration]="carouselPaused() ? '0s' : '5s'"></div>
+        </div>
+      </div>
+
+      <!-- Dots + stats en fila -->
+      <div class="flex items-center gap-2 mt-3 flex-shrink-0">
+        @for (slide of carouselSlides; track slide.id; let i = $index) {
+          <button type="button" (click)="goToCarousel(i)"
+            class="h-1.5 rounded-full transition-all duration-300 cursor-pointer"
+            [class]="activeCarousel() === i ? 'w-7 bg-cyan-400' : 'w-1.5 bg-white/20 hover:bg-white/40'">
+          </button>
+        }
+        <span class="ml-auto text-xs text-slate-500 tabular-nums">{{ activeCarousel()+1 }}/{{ carouselSlides.length }}</span>
+      </div>
+
+      <!-- Stats compactas -->
+      <div class="grid grid-cols-3 gap-2 mt-3 flex-shrink-0">
+        <div class="bg-slate-900/50 border border-white/5 rounded-xl p-2 text-center">
+          <p class="text-base font-extrabold text-cyan-400">+35%</p>
+          <p class="text-[10px] text-slate-500">Ahorro</p>
+        </div>
+        <div class="bg-slate-900/50 border border-white/5 rounded-xl p-2 text-center">
+          <p class="text-base font-extrabold text-purple-400">98.7%</p>
+          <p class="text-[10px] text-slate-500">Precisión</p>
+        </div>
+        <div class="bg-slate-900/50 border border-white/5 rounded-xl p-2 text-center">
+          <p class="text-base font-extrabold text-emerald-400">24/7</p>
+          <p class="text-[10px] text-slate-500">Monitoreo</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ PANEL DERECHO ═══════════════ -->
+  <main class="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 h-full overflow-hidden animate-slide-right">
+    <div class="w-full max-w-sm">
+
+      <!-- Logo móvil -->
+      <a routerLink="/bienvenida" class="lg:hidden flex items-center gap-2 w-fit mb-5 mx-auto">
+        <div class="w-7 h-7">
+          <svg class="w-full h-full text-cyan-400" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6">
+            <polygon points="50,5 90,27.5 90,72.5 50,95 10,72.5 10,27.5" fill="rgba(6,182,212,0.15)"/>
+            <path d="M35 50L45 60L65 40" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="text-lg font-extrabold">Fintech<span class="text-cyan-400">AI</span></span>
+      </a>
+
+      <!-- Card -->
+      <div class="relative bg-slate-900/65 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-[0_0_50px_rgba(6,182,212,0.1)]">
+
+        <!-- Tabs -->
+        <div class="flex items-center gap-1 p-1 mb-4 rounded-xl bg-slate-950/70 border border-white/5">
+          <button id="tab-login" type="button" (click)="setMode('login')"
+            class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 cursor-pointer"
+            [class]="mode() === 'login' ? 'tab-active' : 'text-slate-400 hover:text-white'">
+            Iniciar sesión
+          </button>
+          <button id="tab-register" type="button" (click)="setMode('register')"
+            class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-300 cursor-pointer"
+            [class]="mode() === 'register' ? 'tab-active' : 'text-slate-400 hover:text-white'">
+            Crear cuenta
+          </button>
+          @if (mode() === 'forgot') {
+            <button type="button" class="flex-1 py-2 rounded-lg text-xs font-semibold tab-active cursor-default">
+              Recuperar
+            </button>
+          }
+        </div>
+
+        <!-- Encabezado -->
+        <h1 class="text-xl font-extrabold tracking-tight text-white">
+          {{ mode() === 'login' ? 'Bienvenido de nuevo' : mode() === 'register' ? 'Crea tu cuenta' : 'Recuperar Contraseña' }}
+        </h1>
+        <p class="mt-0.5 text-xs text-slate-400">
+          @if (mode() === 'login') {
+            Ingresa tus credenciales para acceder.
+          } @else if (mode() === 'register') {
+            Regístrate para optimizar tus finanzas.
+          } @else if (forgotStep() === 1) {
+            Paso 1: Ingresa tu correo para recibir un código de seguridad.
+          } @else if (forgotStep() === 2) {
+            Paso 2: Ingresa el código de 6 dígitos enviado a tu correo.
+          } @else {
+            Paso 3: Crea y confirma tu nueva contraseña.
+          }
+        </p>
+
+        <!-- Error -->
+        @if (errorMessage()) {
+          <div class="mt-3 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-950/40 px-3 py-2 text-xs text-red-300 animate-shake">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {{ errorMessage() }}
+          </div>
+        }
+
+        <!-- Éxito -->
+        @if (successMessage()) {
+          <div class="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/40 px-3 py-2 text-xs text-emerald-300">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            {{ successMessage() }}
+          </div>
+        }
+
+        <!-- ── FORM LOGIN ── -->
+        @if (mode() === 'login') {
+          <form id="form-login" class="mt-3 flex flex-col gap-3" [formGroup]="loginForm" (ngSubmit)="onSubmitLogin()">
+
+            <!-- Email -->
+            <div>
+              <label for="login-email" class="block text-xs font-medium text-slate-300 mb-1">Correo electrónico</label>
+              <div class="relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/>
+                </svg>
+                <input id="login-email" type="email" formControlName="email" placeholder="ejemplo@empresa.com" autocomplete="email"
+                  class="input-glow w-full rounded-xl bg-slate-950/70 border border-white/10 pl-9 pr-4 py-2.5 text-xs text-white placeholder:text-slate-500 transition-all duration-300"/>
+              </div>
+              @if (loginForm.controls.email.invalid && loginForm.controls.email.touched) {
+                <p class="mt-1 text-[10px] text-red-400">Ingresa un correo válido.</p>
+              }
+            </div>
+
+            <!-- Contraseña -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="login-password" class="block text-xs font-medium text-slate-300">Contraseña</label>
+                <button type="button" (click)="startForgotPassword()" class="text-[10px] text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer">¿Olvidaste tu contraseña?</button>
+              </div>
+              <div class="relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <input id="login-password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+                  placeholder="••••••••" autocomplete="current-password"
+                  class="input-glow w-full rounded-xl bg-slate-950/70 border border-white/10 pl-9 pr-9 py-2.5 text-xs text-white placeholder:text-slate-500 transition-all duration-300"/>
+                <button type="button" (click)="togglePassword()"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer">
+                  @if (showPassword()) {
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  } @else {
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 11s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/><path d="M9.53 9.53a3 3 0 0 0 4.24 4.24"/></svg>
+                  }
+                </button>
+              </div>
+              @if (showForgotHint()) {
+                <p class="mt-1 text-[10px] text-cyan-300/80 bg-cyan-950/30 border border-cyan-500/20 rounded-lg px-2.5 py-1.5">
+                  💡 Demo: <strong>demo&#64;fintech.ai</strong> / <strong>Demo1234</strong>
+                </p>
+              }
+            </div>
+
+            <!-- Recordarme + submit en fila -->
+            <div class="flex items-center justify-between">
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" formControlName="remember" class="peer sr-only"/>
+                <span class="w-3.5 h-3.5 rounded border border-white/20 bg-slate-950/60 flex items-center justify-center peer-checked:bg-cyan-500 peer-checked:border-cyan-500 transition-colors flex-shrink-0">
+                  <svg class="w-2.5 h-2.5 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </span>
+                <span class="text-[11px] text-slate-400">Recordarme</span>
+              </label>
+              <button id="btn-demo" type="button" (click)="fillDemoCredentials()"
+                class="text-[10px] text-slate-500 hover:text-cyan-300 transition-colors cursor-pointer">✨ Usar demo</button>
+            </div>
+
+            <!-- Botón login -->
+            <button id="btn-login" type="submit" [disabled]="loading()"
+              class="relative inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_35px_rgba(6,182,212,0.6)] transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer overflow-hidden">
+              @if (loading()) {
+                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Verificando...</span>
+              } @else {
+                <span>Iniciar sesión</span><span class="text-base">→</span>
+              }
+            </button>
+          </form>
+        }
+
+        <!-- ── FORM REGISTRO ── -->
+        @if (mode() === 'register') {
+          <form id="form-register" class="mt-3 flex flex-col gap-2.5" [formGroup]="registerForm" (ngSubmit)="onSubmitRegister()">
+
+            <!-- Nombre -->
+            <div>
+              <label for="register-name" class="block text-xs font-medium text-slate-300 mb-1">Nombre completo</label>
+              <div class="relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+                <input id="register-name" type="text" formControlName="name" placeholder="Tu nombre completo" autocomplete="name"
+                  class="input-glow w-full rounded-xl bg-slate-950/70 border border-white/10 pl-9 pr-4 py-2.5 text-xs text-white placeholder:text-slate-500 transition-all duration-300"/>
+              </div>
+              @if (registerForm.controls.name.invalid && registerForm.controls.name.touched) {
+                <p class="mt-0.5 text-[10px] text-red-400">Mínimo 2 caracteres.</p>
+              }
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label for="register-email" class="block text-xs font-medium text-slate-300 mb-1">Correo electrónico</label>
+              <div class="relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/>
+                </svg>
+                <input id="register-email" type="email" formControlName="email" placeholder="ejemplo@empresa.com" autocomplete="email"
+                  class="input-glow w-full rounded-xl bg-slate-950/70 border border-white/10 pl-9 pr-4 py-2.5 text-xs text-white placeholder:text-slate-500 transition-all duration-300"/>
+              </div>
+              @if (registerForm.controls.email.invalid && registerForm.controls.email.touched) {
+                <p class="mt-0.5 text-[10px] text-red-400">Correo inválido.</p>
+              }
+            </div>
+
+            <!-- Contraseña + barra de fuerza -->
+            <div>
+              <label for="register-password" class="block text-xs font-medium text-slate-300 mb-1">Contraseña</label>
+              <div class="relative">
+                <input id="register-password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+                  placeholder="Mínimo 6 caracteres" autocomplete="new-password"
+                  class="input-glow w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 pr-9 py-2.5 text-xs text-white placeholder:text-slate-500 transition-all duration-300"/>
+                <button type="button" (click)="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer">
+                  @if (showPassword()) {
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  } @else {
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 11s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/><path d="M9.53 9.53a3 3 0 0 0 4.24 4.24"/></svg>
+                  }
+                </button>
+              </div>
+              @if (registerForm.controls.password.value) {
+                <div class="mt-1.5 flex gap-1">
+                  <div class="strength-bar flex-1" [style.background-color]="passwordStrengthColor()"></div>
+                  <div class="strength-bar flex-1" [style.background-color]="passwordStrength() >= 2 ? passwordStrengthColor() : 'rgba(255,255,255,0.08)'"></div>
+                  <div class="strength-bar flex-1" [style.background-color]="passwordStrength() >= 3 ? passwordStrengthColor() : 'rgba(255,255,255,0.08)'"></div>
+                  <div class="strength-bar flex-1" [style.background-color]="passwordStrength() >= 4 ? passwordStrengthColor() : 'rgba(255,255,255,0.08)'"></div>
+                </div>
+                <p class="text-[10px] mt-0.5" [style.color]="passwordStrengthColor()">{{ passwordStrengthLabel() }}</p>
+              }
+            </div>
+
+            <!-- Confirmar -->
+            <div>
+              <label for="register-confirm" class="block text-xs font-medium text-slate-300 mb-1">Confirmar contraseña</label>
+              <div class="relative">
+                <input id="register-confirm" [type]="showConfirmPassword() ? 'text' : 'password'" formControlName="confirmPassword"
+                  placeholder="Repite tu contraseña" autocomplete="new-password"
+                  class="input-glow w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 pr-9 py-2.5 text-xs text-white placeholder:text-slate-500 transition-all duration-300"/>
+                <button type="button" (click)="toggleConfirmPassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer">
+                  @if (showConfirmPassword()) {
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  } @else {
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 11s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/><path d="M9.53 9.53a3 3 0 0 0 4.24 4.24"/></svg>
+                  }
+                </button>
+              </div>
+              @if (registerForm.errors?.['passwordMismatch'] && registerForm.controls.confirmPassword.touched) {
+                <p class="mt-0.5 text-[10px] text-red-400">Las contraseñas no coinciden.</p>
+              }
+            </div>
+
+            <!-- Botón registro -->
+            <button id="btn-register" type="submit" [disabled]="loading()"
+              class="relative inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_35px_rgba(6,182,212,0.6)] transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer mt-0.5">
+              @if (loading()) {
+                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Creando cuenta...</span>
+              } @else {
+                <span>Crear cuenta nueva</span><span class="text-base">→</span>
+              }
+            </button>
+          </form>
+        }
+
+        <!-- ── FORM RECUPERAR CONTRASEÑA (3 PASOS) ── -->
+        @if (mode() === 'forgot') {
+          <div class="mt-3 flex flex-col gap-3 animate-slide-right">
+
+            <!-- Indicador de pasos (Wizard Stepper) -->
+            <div class="flex items-center justify-between px-2 py-2 rounded-xl bg-slate-950/60 border border-white/5">
+              <div class="flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all"
+                  [class]="forgotStep() >= 1 ? 'bg-cyan-500 text-slate-950 shadow-[0_0_10px_#22d3ee]' : 'bg-slate-800 text-slate-500'">1</span>
+                <span class="text-[10px] font-medium" [class]="forgotStep() === 1 ? 'text-cyan-400' : 'text-slate-500'">Correo</span>
+              </div>
+              <div class="h-0.5 w-6" [class]="forgotStep() >= 2 ? 'bg-cyan-500' : 'bg-slate-800'"></div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all"
+                  [class]="forgotStep() >= 2 ? 'bg-purple-500 text-white shadow-[0_0_10px_#a855f7]' : 'bg-slate-800 text-slate-500'">2</span>
+                <span class="text-[10px] font-medium" [class]="forgotStep() === 2 ? 'text-purple-400' : 'text-slate-500'">Código</span>
+              </div>
+              <div class="h-0.5 w-6" [class]="forgotStep() >= 3 ? 'bg-emerald-500' : 'bg-slate-800'"></div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all"
+                  [class]="forgotStep() === 3 ? 'bg-emerald-500 text-slate-950 shadow-[0_0_10px_#34d399]' : 'bg-slate-800 text-slate-500'">3</span>
+                <span class="text-[10px] font-medium" [class]="forgotStep() === 3 ? 'text-emerald-400' : 'text-slate-500'">Nueva Clave</span>
+              </div>
+            </div>
+
+            <!-- PASO 1: INGRESAR CORREO -->
+            @if (forgotStep() === 1) {
+              <form (submit)="submitForgotStep1($event)" class="flex flex-col gap-3">
+                <div>
+                  <label for="forgot-email" class="block text-xs font-medium text-slate-300 mb-1">Correo electrónico registrado</label>
+                  <div class="relative">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/>
+                    </svg>
+                    <input id="forgot-email" type="email" [value]="forgotEmail()" (input)="forgotEmail.set($any($event.target).value)"
+                      placeholder="demo@fintech.ai"
+                      class="input-glow w-full rounded-xl bg-slate-950/70 border border-white/10 pl-9 pr-4 py-2.5 text-xs text-white placeholder:text-slate-500 transition-all duration-300"/>
+                  </div>
+                </div>
+
+                <button type="button" (click)="submitForgotStep1($event)" [disabled]="loading()"
+                  class="relative inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all cursor-pointer">
+                  @if (loading()) {
+                    <span>Enviando código...</span>
+                  } @else {
+                    <span>Enviar Código de Verificación</span><span class="text-sm">→</span>
+                  }
+                </button>
+              </form>
+            }
+
+            <!-- PASO 2: INGRESAR CÓDIGO DE VERIFICACIÓN -->
+            @if (forgotStep() === 2) {
+              <form (submit)="submitForgotStep2($event)" class="flex flex-col gap-3">
+                <div class="p-2.5 rounded-xl bg-purple-950/30 border border-purple-500/20 text-[11px] text-purple-200">
+                  📩 Código enviado a: <strong class="text-cyan-300">{{ forgotEmail() }}</strong>
+                  <div class="mt-1 flex items-center justify-between">
+                    <span class="text-[10px] text-slate-400">Código impreso en consola: <strong class="text-amber-300 font-mono">{{ generatedCode() }}</strong></span>
+                    <button type="button" (click)="autofillForgotCode()" class="text-[9px] font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded-md hover:bg-cyan-900/60 cursor-pointer">
+                      ⚡ Rellenar
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label for="forgot-code" class="block text-xs font-medium text-slate-300 mb-1">Código de verificación</label>
+                  <div class="relative">
+                    <input id="forgot-code" type="text" [value]="forgotCode()" (input)="forgotCode.set($any($event.target).value)"
+                      placeholder="Ej: 849204" maxlength="6"
+                      class="input-glow w-full tracking-[0.3em] font-mono text-center font-bold text-sm rounded-xl bg-slate-950/70 border border-purple-500/40 py-2.5 text-cyan-300 placeholder:text-slate-600 placeholder:tracking-normal transition-all duration-300"/>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                  <button type="button" (click)="resendForgotCode()" class="text-[10px] text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer">
+                    🔄 Reenviar otro código
+                  </button>
+                  <button type="button" (click)="forgotStep.set(1)" class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors cursor-pointer">
+                    Cambiar correo
+                  </button>
+                </div>
+
+                <button type="button" (click)="submitForgotStep2($event)" [disabled]="loading()"
+                  class="relative inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all cursor-pointer">
+                  @if (loading()) {
+                    <span>Verificando...</span>
+                  } @else {
+                    <span>Verificar Código</span><span class="text-sm">→</span>
+                  }
+                </button>
+              </form>
+            }
+
+            <!-- PASO 3: NUEVA CONTRASEÑA -->
+            @if (forgotStep() === 3) {
+              <form (submit)="submitForgotStep3($event)" class="flex flex-col gap-2.5">
+                <div>
+                  <label for="forgot-new-pass" class="block text-xs font-medium text-slate-300 mb-1">Nueva Contraseña</label>
+                  <div class="relative">
+                    <input id="forgot-new-pass" [type]="showForgotNewPassword() ? 'text' : 'password'"
+                      [value]="forgotNewPassword()" (input)="forgotNewPassword.set($any($event.target).value)"
+                      placeholder="Mínimo 6 caracteres"
+                      class="input-glow w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 pr-9 py-2.5 text-xs text-white placeholder:text-slate-500 transition-all duration-300"/>
+                    <button type="button" (click)="showForgotNewPassword.update(v => !v)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer">
+                      @if (showForgotNewPassword()) {
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                      } @else {
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 11s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/><path d="M9.53 9.53a3 3 0 0 0 4.24 4.24"/></svg>
+                      }
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label for="forgot-confirm-pass" class="block text-xs font-medium text-slate-300 mb-1">Confirmar Nueva Contraseña</label>
+                  <div class="relative">
+                    <input id="forgot-confirm-pass" [type]="showForgotConfirmPassword() ? 'text' : 'password'"
+                      [value]="forgotConfirmPassword()" (input)="forgotConfirmPassword.set($any($event.target).value)"
+                      placeholder="Repite la contraseña"
+                      class="input-glow w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 pr-9 py-2.5 text-xs text-white placeholder:text-slate-500 transition-all duration-300"/>
+                    <button type="button" (click)="showForgotConfirmPassword.update(v => !v)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer">
+                      @if (showForgotConfirmPassword()) {
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                      } @else {
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 11s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/><path d="M9.53 9.53a3 3 0 0 0 4.24 4.24"/></svg>
+                      }
+                    </button>
+                  </div>
+                </div>
+
+                <button type="button" (click)="submitForgotStep3($event)" [disabled]="loading()"
+                  class="relative inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 shadow-[0_0_20px_rgba(52,211,153,0.4)] transition-all cursor-pointer">
+                  @if (loading()) {
+                    <span>Guardando contraseña...</span>
+                  } @else {
+                    <span>Restablecer Contraseña 🔒</span>
+                  }
+                </button>
+              </form>
+            }
+
+            <button type="button" (click)="setMode('login')"
+              class="mt-1 text-center text-xs text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1">
+              ← Volver a Iniciar Sesión
+            </button>
+          </div>
+        }
+
+        <!-- Trust badges estéticos -->
+        <div class="mt-4 grid grid-cols-3 gap-2">
+          <div class="flex flex-col items-center gap-1.5 p-2.5 rounded-xl bg-gradient-to-b from-cyan-950/40 to-slate-950/40 border border-cyan-500/15 hover:border-cyan-500/30 transition-all duration-300 group">
+            <div class="w-7 h-7 rounded-lg bg-cyan-500/15 flex items-center justify-center group-hover:bg-cyan-500/25 transition-colors">
+              <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <span class="text-[9px] font-semibold text-slate-400 text-center leading-tight group-hover:text-slate-300 transition-colors">256-bit<br>Encriptado</span>
+          </div>
+
+          <div class="flex flex-col items-center gap-1.5 p-2.5 rounded-xl bg-gradient-to-b from-purple-950/40 to-slate-950/40 border border-purple-500/15 hover:border-purple-500/30 transition-all duration-300 group">
+            <div class="w-7 h-7 rounded-lg bg-purple-500/15 flex items-center justify-center group-hover:bg-purple-500/25 transition-colors">
+              <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <span class="text-[9px] font-semibold text-slate-400 text-center leading-tight group-hover:text-slate-300 transition-colors">Sin tarjeta<br>requerida</span>
+          </div>
+
+          <div class="flex flex-col items-center gap-1.5 p-2.5 rounded-xl bg-gradient-to-b from-emerald-950/40 to-slate-950/40 border border-emerald-500/15 hover:border-emerald-500/30 transition-all duration-300 group">
+            <div class="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center group-hover:bg-emerald-500/25 transition-colors">
+              <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <span class="text-[9px] font-semibold text-slate-400 text-center leading-tight group-hover:text-slate-300 transition-colors">Soporte<br>24 / 7</span>
+          </div>
+        </div>
+
+        <!-- Alternar modo -->
+        <p class="mt-3 text-center text-[10px] text-slate-500">
+          @if (mode() === 'login') {
+            ¿No tienes cuenta?
+            <button type="button" (click)="setMode('register')" class="font-semibold text-cyan-400 hover:text-cyan-300 cursor-pointer">Regístrate gratis</button>
+          } @else {
+            ¿Ya tienes cuenta?
+            <button type="button" (click)="setMode('login')" class="font-semibold text-cyan-400 hover:text-cyan-300 cursor-pointer">Inicia sesión</button>
+          }
+        </p>
+      </div>
+
+      <!-- Footer seguridad compacto -->
+      <div class="mt-3 flex items-center justify-center gap-3 text-[10px] text-slate-600">
+        <div class="flex items-center gap-1 text-cyan-400/50">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          256-bit
+        </div>
+        <span>·</span>
+        <a href="#" class="hover:text-slate-400 transition-colors">Privacidad</a>
+        <span>·</span>
+        <a href="#" class="hover:text-slate-400 transition-colors">Términos</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- TOAST -->
+  @if (toastMessage()) {
+    <div class="fixed bottom-5 right-5 z-50 max-w-xs rounded-xl border border-cyan-500/30 bg-slate-900/95 backdrop-blur-xl px-4 py-3 text-xs text-slate-200 shadow-[0_0_25px_rgba(6,182,212,0.2)] animate-toast-in">
+      {{ toastMessage() }}
+    </div>
+  }
+</div>

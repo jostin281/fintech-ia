@@ -1,0 +1,249 @@
+<!-- ══════════════════════════════════════════════════════
+     CONFIGURACIÓN
+══════════════════════════════════════════════════════ -->
+<div class="page-root">
+
+  <!-- FONDO ESTÁTICO LIMPIO SIN ANIMACIONES -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <a routerLink="/dashboard" class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+    <div class="header-center">
+      <h1 class="page-title">Configuración del Sistema</h1>
+      <span class="header-badge">Ajustes & Preferencias</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-save-top" (click)="saveSettings()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Guardar Cambios
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="page-main">
+
+    <!-- LAYOUT DE 2 COLUMNAS: SIDEBAR DE TABS + PANEL DE CONFIGURACIÓN -->
+    <div class="settings-layout">
+      
+      <!-- TABS LATERALES -->
+      <aside class="tabs-sidebar">
+        <button class="tab-item" [class.active]="activeTab() === 'general'" (click)="setTab('general')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Empresa & Fiscal
+        </button>
+
+        <button class="tab-item" [class.active]="activeTab() === 'integraciones'" (click)="setTab('integraciones')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Integraciones SAT & Bancos
+        </button>
+
+        <button class="tab-item" [class.active]="activeTab() === 'notificaciones'" (click)="setTab('notificaciones')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Notificaciones & Alertas
+        </button>
+
+        <button class="tab-item" [class.active]="activeTab() === 'api'" (click)="setTab('api')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Asistente IA (Gemini)
+        </button>
+      </aside>
+
+      <!-- CONTENIDO DEL PANEL SELECCIONADO -->
+      <section class="panel-content">
+        
+        <!-- TAB: EMPRESA & FISCAL -->
+        @if (activeTab() === 'general') {
+          <div class="card settings-panel">
+            <h2 class="panel-title">Información de la Empresa / Contribuyente</h2>
+            <p class="panel-sub">Datos de facturación e identificación fiscal SRI Ecuador.</p>
+
+            <div class="form-grid">
+              <div class="form-group full">
+                <label class="form-label">Razón Social</label>
+                <input type="text" class="form-input" [value]="companyName()" (input)="companyName.set($any($event.target).value)" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">RUC / Cédula Fiscal</label>
+                <input type="text" class="form-input font-mono uppercase" [value]="rfc()" (input)="rfc.set($any($event.target).value)" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Régimen Tributario SRI</label>
+                <select class="form-input" [value]="fiscalRegime()" (change)="fiscalRegime.set($any($event.target).value)">
+                  <option value="GENERAL">Régimen General</option>
+                  <option value="RIMPE_EMPRENDEDOR">RIMPE Emprendedor</option>
+                  <option value="RIMPE_NEGOCIO_POPULAR">RIMPE Negocio Popular</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- TAB: INTEGRACIONES -->
+        @if (activeTab() === 'integraciones') {
+          <div class="card settings-panel">
+            <h2 class="panel-title">Integraciones de Datos</h2>
+            <p class="panel-sub">Conexiones directas a servicios bancarios y tributarios.</p>
+
+            <div class="integrations-list">
+              <!-- SRI -->
+              <div class="integ-item">
+                <div class="integ-icon cyan">🏛️</div>
+                <div class="integ-info">
+                  <div class="flex items-center gap-2">
+                    <h3 class="integ-name">Conexión WebServices SRI Ecuador 🇪🇨</h3>
+                    <span class="status-chip active">Conectado</span>
+                  </div>
+                  <p class="integ-desc">Sincronización y emisión de comprobantes autorizados por el SRI.</p>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" [checked]="satAutoSync()" (change)="toggleSatSync()"/>
+                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+
+              <!-- BANCO LOCAL -->
+              <div class="integ-item">
+                <div class="integ-icon purple">💳</div>
+                <div class="integ-info">
+                  <div class="flex items-center gap-2">
+                    <h3 class="integ-name">Open Banking & Transferencias Directas</h3>
+                    <span class="status-chip active">Conectado</span>
+                  </div>
+                  <p class="integ-desc">Conciliación bancaria automática con tus cuentas en Ecuador.</p>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" checked readonly/>
+                  <span class="toggle-track active-locked"><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+
+              <!-- STRIPE / PAYPAL -->
+              <div class="integ-item">
+                <div class="integ-icon emerald">⚡</div>
+                <div class="integ-info">
+                  <div class="flex items-center gap-2">
+                    <h3 class="integ-name">Pasarela de Pagos Stripe / PayPal</h3>
+                    <span class="status-chip muted">Inactivo</span>
+                  </div>
+                  <p class="integ-desc">Importación de cobros y comisiones automáticamente.</p>
+                </div>
+                <button class="btn-connect">Conectar</button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- TAB: NOTIFICACIONES -->
+        @if (activeTab() === 'notificaciones') {
+          <div class="card settings-panel">
+            <h2 class="panel-title">Notificaciones & Alertas IA</h2>
+            <p class="panel-sub">Elige cómo y cuándo deseas recibir advertencias de gastos.</p>
+
+            <div class="prefs-list">
+              <div class="pref-row">
+                <div class="pref-info">
+                  <p class="pref-name">Notificaciones Push de Movimientos</p>
+                  <p class="pref-desc">Recibe alertas instantáneas en cada cargo o ingreso.</p>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" [checked]="pushNotifications()" (change)="togglePush()"/>
+                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+
+              <div class="pref-row">
+                <div class="pref-info">
+                  <p class="pref-name">Resumen Semanal por Correo</p>
+                  <p class="pref-desc">Informe consolidado de tu flujo de caja los domingos.</p>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" [checked]="emailDigest()" (change)="toggleEmail()"/>
+                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+
+              <div class="pref-row">
+                <div class="pref-info">
+                  <p class="pref-name">Detección de Anomalias con IA</p>
+                  <p class="pref-desc">Alertar en caso de cobros duplicados o desviaciones de presupuesto.</p>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" [checked]="aiAutoInsights()" (change)="toggleAi()"/>
+                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- TAB: ASISTENTE IA (GEMINI) -->
+        @if (activeTab() === 'api') {
+          <div class="card settings-panel">
+            <h2 class="panel-title">Asistente IA · Google Gemini</h2>
+            <p class="panel-sub">Pega tu propia clave de Gemini para que el asistente responda con IA generativa en vez del motor de reglas local.</p>
+
+            @if (cargandoClaveGemini()) {
+              <p class="text-xs text-slate-400">Cargando tu clave guardada…</p>
+            } @else {
+              <div class="api-key-box">
+                <label class="form-label">Tu clave de Gemini (Google AI Studio)</label>
+                <div class="api-input-group">
+                  <input
+                    [type]="showApiKey() ? 'text' : 'password'"
+                    class="form-input font-mono text-cyan-400 font-bold flex-1"
+                    placeholder="AIza..."
+                    [value]="geminiApiKeyInput()"
+                    (input)="geminiApiKeyInput.set($any($event.target).value)"
+                  />
+                  <button class="btn-api-action" (click)="toggleShowApiKey()">
+                    {{ showApiKey() ? '👁️ Ocultar' : '👁️ Mostrar' }}
+                  </button>
+                  <button class="btn-api-action copy" (click)="guardarClaveGemini()" [disabled]="guardandoClaveGemini()">
+                    {{ guardandoClaveGemini() ? 'Guardando…' : '💾 Guardar' }}
+                  </button>
+                  @if (geminiApiKeyGuardada()) {
+                    <button class="btn-api-action" (click)="eliminarClaveGemini()" [disabled]="guardandoClaveGemini()">
+                      🗑️ Quitar
+                    </button>
+                  }
+                </div>
+
+                @if (errorClaveGemini()) {
+                  <p class="text-xs text-red-400 mt-2">{{ errorClaveGemini() }}</p>
+                } @else if (geminiApiKeyGuardada()) {
+                  <p class="text-xs text-emerald-400 mt-2">✔ Clave guardada. El asistente usará Gemini en tus próximas conversaciones.</p>
+                } @else {
+                  <p class="text-xs text-slate-400 mt-2">Sin clave configurada: el asistente responde con su motor de reglas local.</p>
+                }
+              </div>
+            }
+
+            <div class="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-xs text-purple-300">
+              🔒 <strong>Seguridad:</strong> Esta clave se guarda asociada a tu cuenta y solo se usa en tus propias conversaciones con el asistente. Consigue una clave gratuita en <strong>aistudio.google.com</strong>.
+            </div>
+          </div>
+        }
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- TOAST -->
+  @if (toastMessage()) {
+    <div class="toast-notification">
+      {{ toastMessage() }}
+    </div>
+  }
+
+</div>

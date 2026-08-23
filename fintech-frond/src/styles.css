@@ -1,0 +1,1157 @@
+/* Estilos globales */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Permite scroll solo dentro de los componentes que lo necesiten */
+app-root {
+  display: block;
+  height: 100%;
+}
+
+/* ── PERSONALIZACIÓN DE SCROLLBAR CON COLORES DEL PROYECTO ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(37, 99, 235, 0.4) rgba(226, 232, 240, 0.8);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(7, 10, 19, 0.6);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.45), rgba(139, 92, 246, 0.45));
+  border-radius: 999px;
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  transition: all 0.25s ease-in-out;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #06b6d4, #8b5cf6);
+  border-color: rgba(6, 182, 212, 0.6);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.6);
+}
+
+/* ── TARJETA FLOTANTE DE CONSEJOS IA ── */
+.floating-tip-card {
+  position: fixed;
+  bottom: 1.75rem;
+  right: 1.75rem;
+  z-index: 90;
+  max-width: 340px;
+  width: 90%;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  border-radius: 1.25rem;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 8px 32px rgba(6, 182, 212, 0.25);
+  animation: tipSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
+}
+@keyframes tipSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.tip-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+.tip-icon { font-size: 1.1rem; }
+.tip-title { font-size: 0.8rem; font-weight: 800; color: #22d3ee; }
+.btn-close-tip {
+  background: transparent; border: none; color: #64748b;
+  font-size: 1rem; cursor: pointer; padding: 0 4px; transition: color 0.2s;
+}
+.btn-close-tip:hover { color: #f87171; }
+.tip-body { font-size: 0.78rem; color: #e2e8f0; margin: 0; line-height: 1.45; }
+
+/* ── EXCLUSIÓN ABSOLUTA DE BIENVENIDA Y LOGIN DEL MODO CLARO ── */
+app-bienvenida,
+app-login,
+.theme-light app-bienvenida,
+.theme-light app-login {
+  background-color: #070a13 !important;
+  color: #f8fafc !important;
+  display: block;
+  height: 100%;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ESTILOS PREMIUM MODO CLARO AZUL, BLANCO Y MULTICOLOR (.THEME-LIGHT)
+   Aesthetic: Vibrant Fintech Light - Clean Ice White & High Contrast Typography
+   ══════════════════════════════════════════════════════════════════ */
+
+.theme-light {
+  background-color: #dbe4ee !important;
+  color: #0f172a !important;
+}
+
+.theme-light * {
+  scrollbar-color: rgba(37, 99, 235, 0.35) rgba(203, 213, 225, 0.8);
+}
+
+/* ── 1. Estructura Principal y Fondos de Contenedores (Platinum & Slate Mesh) ── */
+.theme-light .app-layout,
+.theme-light .page-root,
+.theme-light .page-main,
+.theme-light .main-content,
+.theme-light .chat-main {
+  background: linear-gradient(135deg, #dbe4ee 0%, #cbd5e1 40%, #d5e0ea 70%, #ccd8e8 100%) !important;
+  color: #0f172a !important;
+}
+
+.theme-light .orb-1 {
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.32) 0%, rgba(6, 182, 212, 0.18) 50%, transparent 70%) !important;
+  filter: blur(50px) !important;
+  opacity: 0.95 !important;
+}
+
+.theme-light .orb-2 {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.28) 0%, rgba(37, 99, 235, 0.16) 50%, transparent 70%) !important;
+  filter: blur(60px) !important;
+  opacity: 0.95 !important;
+}
+
+.theme-light .grid-bg {
+  opacity: 0.12 !important;
+  background-image: linear-gradient(rgba(30, 58, 138, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(30, 58, 138, 0.2) 1px, transparent 1px) !important;
+}
+
+/* ── 2. Sidebars, Encabezados y Navegación Principal ── */
+.theme-light .sidebar {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-right: 1px solid rgba(191, 219, 254, 0.7) !important;
+  box-shadow: 6px 0 30px rgba(37, 99, 235, 0.07), inset -1px 0 0 rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+.theme-light .sidebar-header,
+.theme-light .sidebar-footer {
+  border-color: #eff6ff !important;
+}
+
+.theme-light .top-header,
+.theme-light .page-header {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom: 1px solid rgba(191, 219, 254, 0.7) !important;
+  box-shadow: 0 6px 25px rgba(37, 99, 235, 0.06), inset 0 -1px 0 rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+.theme-light .logo-text,
+.theme-light .page-title,
+.theme-light .panel-title,
+.theme-light .modal-title,
+.theme-light .dash-alert-title {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em;
+}
+
+/* ── 3. CORRECCIÓN DEFINITIVA DE LETRAS Y NÚMEROS EN MODO CLARO ── */
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .kpi-value,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .kpi-val,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .val,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .stat-val,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .stat-value,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .balance-amount,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .m-concept,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .m-amount,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .m-amount.negative,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .budget-category,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .goal-name,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .integ-name,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .pref-name,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .setting-title,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .card-title,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .section-title,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .item-title,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .avatar-name,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .security-title,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .session-name,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .activity-action,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .notif-title,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) h1,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) h2,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) h3,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) h4,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) h5,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) h6 {
+  color: #0f172a !important;
+}
+
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .kpi-label,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .kpi-sub,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .kpi-curr,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .m-meta,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .m-curr,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .lbl,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .sub-text,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .stat-label,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .setting-desc,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .pref-desc,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .budget-sub,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .panel-sub,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .avatar-email,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .security-sub,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .session-meta,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .activity-time,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .notif-body,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .notif-time,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) p,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) span:not(.btn-create *):not(.btn-action-glow *):not(.btn-save *):not(.btn-urgency-action *):not(.btn-send *) {
+  color: #334155 !important;
+}
+
+.theme-light strong,
+.theme-light b {
+  color: #1e3a8a !important;
+}
+
+/* ── 4. Sobrescritura Global de Fondos Tailwind (Ice Glassmorphism) ── */
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-900,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-950,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-800,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-gray-900,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-gray-950,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-900\/60,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-900\/70,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-900\/80,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-900\/90,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-800\/50,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-800\/60,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-800\/70,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-800\/80,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-800\/90,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-950\/80,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-slate-950\/90,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-black\/40,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-black\/50,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .bg-black\/60 {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.92) 100%) !important;
+  border-color: rgba(191, 219, 254, 0.7) !important;
+  box-shadow: 0 10px 30px -5px rgba(37, 99, 235, 0.07), 0 4px 12px -2px rgba(6, 182, 212, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+/* ── 5. Sobrescritura Global de Bordes Tailwind ── */
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .border-slate-800,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .border-slate-700,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .border-slate-900,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .border-gray-800,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .border-white\/10,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .border-white\/5,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .border-white\/8,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .border-white\/15,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .border-white\/20 {
+  border-color: #dbeafe !important;
+}
+
+/* ── 6. Sobrescritura Global de Textos Tailwind ── */
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .text-white,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .text-slate-100,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .text-slate-200,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .text-gray-100,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .text-gray-200 {
+  color: #0f172a !important;
+}
+
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .text-slate-300,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .text-slate-400,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .text-gray-300,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .text-gray-400 {
+  color: #334155 !important;
+}
+
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .text-slate-500,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .text-gray-500 {
+  color: #475569 !important;
+}
+
+/* ── 7. Colores de Acento Vibrantes ── */
+.theme-light .text-cyan-200,
+.theme-light .text-cyan-300,
+.theme-light .text-cyan-400 {
+  color: #0284c7 !important;
+}
+
+.theme-light .text-purple-200,
+.theme-light .text-purple-300,
+.theme-light .text-purple-400 {
+  color: #6366f1 !important;
+}
+
+.theme-light .text-emerald-200,
+.theme-light .text-emerald-300,
+.theme-light .text-emerald-400 {
+  color: #059669 !important;
+}
+
+.theme-light .text-amber-200,
+.theme-light .text-amber-300,
+.theme-light .text-amber-400 {
+  color: #d97706 !important;
+}
+
+.theme-light .text-rose-300,
+.theme-light .text-rose-400,
+.theme-light .text-red-400 {
+  color: #dc2626 !important;
+}
+
+/* ── 8. Barras de Pestañas y Navegación Secundaria ── */
+.theme-light .nav-tabs-bar,
+.theme-light .tab-navigation,
+.theme-light .tabs-bar,
+.theme-light .filter-pills {
+  background: #ffffff !important;
+  border: 1px solid #dbeafe !important;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.05) !important;
+  border-radius: 14px !important;
+}
+
+.theme-light .tab-btn,
+.theme-light .tab-item,
+.theme-light .filter-pill {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+.theme-light .tab-btn:hover,
+.theme-light .tab-item:hover,
+.theme-light .filter-pill:hover {
+  color: #1d4ed8 !important;
+  background: #eff6ff !important;
+}
+
+.theme-light .tab-btn.active,
+.theme-light .tab-item.active,
+.theme-light .filter-pill.active {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(6, 182, 212, 0.12)) !important;
+  color: #1d4ed8 !important;
+  border: 1px solid rgba(37, 99, 235, 0.35) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.12) !important;
+}
+
+/* ── 9. Asistente IA (Copiloto Financiero Gemini) ── */
+.theme-light .chat-container {
+  background: transparent !important;
+}
+
+.theme-light .message-wrapper.ai .msg-bubble {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #dbeafe !important;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.06) !important;
+}
+
+.theme-light .message-wrapper.ai .msg-bubble.gemini-bubble {
+  background: #f0f9ff !important;
+  border-color: #7dd3fc !important;
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.1) !important;
+}
+
+.theme-light .gemini-tag {
+  color: #0284c7 !important;
+}
+
+.theme-light .msg-text {
+  color: #0f172a !important;
+}
+
+.theme-light .message-wrapper.user .msg-bubble {
+  background: linear-gradient(135deg, #2563eb, #0284c7) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.25) !important;
+  border: none !important;
+}
+
+.theme-light .message-wrapper.user .msg-bubble * {
+  color: #ffffff !important;
+}
+
+.theme-light .chat-bottom {
+  background: linear-gradient(to top, #f0f4f9 70%, transparent) !important;
+}
+
+.theme-light .suggestions-title {
+  color: #475569 !important;
+}
+
+.theme-light .suggestion-card {
+  background: #ffffff !important;
+  border: 1px solid #dbeafe !important;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.04) !important;
+}
+
+.theme-light .suggestion-card:hover {
+  background: #eff6ff !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.1) !important;
+}
+
+.theme-light .sug-label {
+  color: #1e3a8a !important;
+  font-weight: 700 !important;
+}
+
+.theme-light .input-area {
+  background: #ffffff !important;
+  border: 1px solid #bfdbfe !important;
+  box-shadow: 0 4px 24px rgba(37, 99, 235, 0.08) !important;
+}
+
+.theme-light .input-area:focus-within {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+}
+
+.theme-light .chat-input {
+  color: #0f172a !important;
+}
+
+.theme-light .btn-config-key {
+  background: #e0f2fe !important;
+  border: 1px solid #7dd3fc !important;
+  color: #0284c7 !important;
+}
+
+.theme-light .btn-clear-chat {
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #475569 !important;
+}
+
+.theme-light .btn-clear-chat:hover {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+.theme-light .footer-note {
+  color: #64748b !important;
+}
+
+/* ── 10. Notificaciones (Centro de Alertas) ── */
+.theme-light .urgency-banner {
+  background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%) !important;
+  border: 1px solid #fecaca !important;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.1) !important;
+}
+
+.theme-light .urgency-title {
+  color: #dc2626 !important;
+}
+
+.theme-light .urgency-sub {
+  color: #991b1b !important;
+}
+
+.theme-light .btn-urgency-action {
+  background: linear-gradient(135deg, #dc2626 0%, #ea580c 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3) !important;
+}
+
+.theme-light .notif-container,
+.theme-light .notif-list {
+  background: transparent !important;
+}
+
+.theme-light .notif-card {
+  background: #ffffff !important;
+  border: 1px solid #dbeafe !important;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.05) !important;
+  border-radius: 1.25rem !important;
+}
+
+.theme-light .notif-card.unread {
+  background: #eff6ff !important;
+  border-color: #93c5fd !important;
+}
+
+.theme-light .notif-card.critica {
+  background: linear-gradient(135deg, #fff1f2 0%, #ffffff 100%) !important;
+  border-color: #fca5a5 !important;
+}
+
+.theme-light .notif-title {
+  color: #0f172a !important;
+}
+
+.theme-light .notif-body {
+  color: #334155 !important;
+}
+
+.theme-light .notif-time {
+  color: #64748b !important;
+}
+
+.theme-light .btn-action-text {
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+
+.theme-light .btn-action-text.danger {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+.theme-light .alert-modal-card {
+  background: #ffffff !important;
+  border: 1px solid #fecaca !important;
+  box-shadow: 0 20px 50px rgba(220, 38, 38, 0.15) !important;
+  color: #0f172a !important;
+}
+
+/* ── 11. Pantalla de Perfil ── */
+.theme-light .avatar-card,
+.theme-light .activity-card,
+.theme-light .tab-panel,
+.theme-light .security-section {
+  background: #ffffff !important;
+  border: 1px solid #dbeafe !important;
+  box-shadow: 0 4px 24px rgba(37, 99, 235, 0.05) !important;
+  border-radius: 1.25rem !important;
+}
+
+.theme-light .avatar-circle {
+  background: #ffffff !important;
+  color: #2563eb !important;
+}
+
+.theme-light .pref-row,
+.theme-light .session-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02) !important;
+}
+
+.theme-light .pref-row:hover,
+.theme-light .session-item:hover {
+  background: #f0f7ff !important;
+  border-color: #93c5fd !important;
+}
+
+.theme-light .pref-select {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.theme-light .form-input {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.theme-light .form-input.editable {
+  background: #eff6ff !important;
+  border-color: #3b82f6 !important;
+  color: #0f172a !important;
+}
+
+.theme-light .btn-edit-avatar {
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+
+.theme-light .btn-edit-avatar:hover {
+  background: #dbeafe !important;
+  color: #1e40af !important;
+}
+
+/* ── 12. Movimientos (Historial de Movimientos) ── */
+.theme-light .movements-container,
+.theme-light .movements-list,
+.theme-light .movement-card {
+  background: #ffffff !important;
+  border: 1px solid #dbeafe !important;
+  box-shadow: 0 4px 24px rgba(37, 99, 235, 0.05) !important;
+  border-radius: 1.25rem !important;
+}
+
+.theme-light .movement-row {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02) !important;
+}
+
+.theme-light .movement-row:hover {
+  background: #f0f7ff !important;
+  border-color: #93c5fd !important;
+}
+
+.theme-light .m-concept {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.theme-light .m-meta,
+.theme-light .m-curr {
+  color: #475569 !important;
+}
+
+.theme-light .m-amount.negative {
+  color: #0f172a !important;
+}
+
+.theme-light .m-amount.positive {
+  color: #059669 !important;
+}
+
+.theme-light .m-icon-wrap {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+}
+
+.theme-light .m-icon-wrap.ingreso {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.theme-light .search-wrap {
+  background: #ffffff !important;
+  border: 1px solid #bfdbfe !important;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.05) !important;
+}
+
+.theme-light .search-wrap input {
+  color: #0f172a !important;
+}
+
+/* ── 13. Facturación Electrónica SRI (Ecuador 🇪🇨) ── */
+.theme-light .sri-connect-banner {
+  background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%) !important;
+  border: 1px solid #fde68a !important;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.1) !important;
+}
+
+.theme-light .banner-title {
+  color: #b45309 !important;
+}
+
+.theme-light .banner-sub {
+  color: #78350f !important;
+}
+
+.theme-light .btn-sri-connect {
+  background: #fef3c7 !important;
+  border: 1px solid #fde68a !important;
+  color: #b45309 !important;
+}
+
+.theme-light .btn-sri-connect.connected {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+.theme-light .table-card,
+.theme-light .facturas-table {
+  background: #ffffff !important;
+  border: 1px solid #dbeafe !important;
+  box-shadow: 0 4px 24px rgba(37, 99, 235, 0.05) !important;
+  border-radius: 1rem !important;
+}
+
+.theme-light .facturas-table th {
+  background: #eff6ff !important;
+  color: #1e3a8a !important;
+  border-bottom: 1px solid #dbeafe !important;
+}
+
+.theme-light .facturas-table td {
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.theme-light .folio-tag {
+  background: #e0f2fe !important;
+  border: 1px solid #7dd3fc !important;
+  color: #0369a1 !important;
+}
+
+.theme-light .folio-tag.recibida {
+  background: #f3e8ff !important;
+  border-color: #d8b4fe !important;
+  color: #7c3aed !important;
+}
+
+.theme-light .type-sub {
+  color: #475569 !important;
+}
+
+.theme-light .clave-acceso-badge {
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+}
+
+.theme-light .sri-status-chip {
+  background: #ecfdf5 !important;
+  border: 1px solid #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+.theme-light .sri-status-chip.pending {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+
+.theme-light .btn-action-ride {
+  background: #e0f2fe !important;
+  border: 1px solid #7dd3fc !important;
+  color: #0284c7 !important;
+}
+
+.theme-light .btn-action-ride:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+.theme-light .btn-action-xml {
+  background: #f3e8ff !important;
+  border: 1px solid #d8b4fe !important;
+  color: #7c3aed !important;
+}
+
+.theme-light .btn-action-xml:hover {
+  background: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+/* ── 14. Presupuestos y Alertas de IA ── */
+.theme-light .budget-card {
+  background: #ffffff !important;
+  border: 1px solid #e0e7ff !important;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.06) !important;
+}
+
+.theme-light .budget-category,
+.theme-light .val {
+  color: #0f172a !important;
+}
+
+.theme-light .budget-sub,
+.theme-light .lbl {
+  color: #475569 !important;
+}
+
+.theme-light .budget-amounts {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.theme-light .progress-bar-bg {
+  background: #e2e8f0 !important;
+}
+
+.theme-light .ai-alert-banner {
+  background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%) !important;
+  border: 1px solid #fecaca !important;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.08) !important;
+}
+
+.theme-light .ai-alert-title {
+  color: #dc2626 !important;
+}
+
+.theme-light .ai-alert-body {
+  color: #7f1d1d !important;
+}
+
+.theme-light .btn-action-add {
+  background: #f3e8ff !important;
+  border: 1px solid #d8b4fe !important;
+  color: #7c3aed !important;
+}
+
+.theme-light .btn-action-add:hover {
+  background: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+/* ── 15. Metas de Ahorro ── */
+.theme-light .global-progress-card {
+  background: #ffffff !important;
+  border: 1px solid #7dd3fc !important;
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.08) !important;
+}
+
+.theme-light .global-bar-bg {
+  background: #e0f2fe !important;
+}
+
+.theme-light .goal-card {
+  background: #ffffff !important;
+  border: 1px solid #dbeafe !important;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.05) !important;
+}
+
+.theme-light .goal-name {
+  color: #0f172a !important;
+}
+
+.theme-light .goal-amounts {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.theme-light .btn-action-deposit {
+  background: #e0f2fe !important;
+  border: 1px solid #7dd3fc !important;
+  color: #0284c7 !important;
+}
+
+.theme-light .btn-action-deposit:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+/* ── 16. Contenedores de Tarjetas, Paneles Glassmorphism y KPIs Generales ── */
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .stat-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .content-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .avatar-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .pref-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .info-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .metric-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .chart-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .tax-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .report-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .chat-container,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .quick-action-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .kpi-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .glass-panel,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .security-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .tab-content,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .detail-panel,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .profile-header-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .config-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .suggestion-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .normativa-card,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .info-box,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .summary-box,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .filter-bar,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .invoice-list,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .setting-row {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.92) 100%) !important;
+  border: 1px solid rgba(191, 219, 254, 0.7) !important;
+  box-shadow: 0 10px 30px -5px rgba(37, 99, 235, 0.07), 0 4px 12px -2px rgba(6, 182, 212, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  color: #0f172a !important;
+  backdrop-filter: blur(16px) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.theme-light .kpi-card:hover,
+.theme-light .glass-panel:hover,
+.theme-light .stat-card:hover,
+.theme-light .card:hover {
+  border-color: rgba(37, 99, 235, 0.5) !important;
+  box-shadow: 0 18px 40px -6px rgba(37, 99, 235, 0.15), 0 0 25px rgba(6, 182, 212, 0.12) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Accent KPI Icon background boxes con resplandor vibrante */
+.theme-light .kpi-card.cyan .kpi-icon {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
+  color: #0284c7 !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.22) !important;
+}
+
+.theme-light .kpi-card.purple .kpi-icon {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%) !important;
+  color: #7c3aed !important;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.22) !important;
+}
+
+.theme-light .kpi-card.emerald .kpi-icon {
+  background: linear-gradient(135deg, #ecfdf5 0%, #a7f3d0 100%) !important;
+  color: #059669 !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.22) !important;
+}
+
+.theme-light .kpi-card.amber .kpi-icon {
+  background: linear-gradient(135deg, #fffbeb 0%, #fde68a 100%) !important;
+  color: #d97706 !important;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.22) !important;
+}
+
+.theme-light .kpi-card.red .kpi-icon {
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%) !important;
+  color: #dc2626 !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.22) !important;
+}
+
+/* ── 17. Chips, Badges e Indicadores ── */
+.theme-light .chip-info,
+.theme-light .chip-select,
+.theme-light .pill-cnt {
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #1e40af !important;
+}
+
+.theme-light .chip-cyan {
+  background: #e0f2fe !important;
+  border: 1px solid #7dd3fc !important;
+  color: #0369a1 !important;
+}
+
+.theme-light .badge-status-green,
+.theme-light .status-tag {
+  background: #ecfdf5 !important;
+  border: 1px solid #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+.theme-light .status-tag.pending {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+
+.theme-light .header-badge {
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #2563eb !important;
+}
+
+/* ── 18. Menú de Navegación Lateral (Nav Items) ── */
+.theme-light .nav-section-title {
+  color: #64748b !important;
+}
+
+.theme-light .nav-item {
+  color: #334155 !important;
+  transition: all 0.2s ease !important;
+}
+
+.theme-light .nav-item:hover {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+  border-color: #bfdbfe !important;
+}
+
+.theme-light .nav-item.active {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.14) 0%, rgba(6, 182, 212, 0.12) 100%) !important;
+  color: #1d4ed8 !important;
+  border-left: 4px solid #2563eb !important;
+  border-color: rgba(96, 165, 250, 0.5) !important;
+  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.15) !important;
+  font-weight: 700 !important;
+}
+
+.theme-light .user-mini-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.04) !important;
+}
+
+.theme-light .user-name {
+  color: #1e3a8a !important;
+}
+
+.theme-light .user-plan {
+  color: #2563eb !important;
+}
+
+/* ── 19. Botones Principales con Resplandor Eléctrico ── */
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-create,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-action-glow,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-save,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-send.active,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-dash-action,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-banner-connect,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-urgency-action {
+  background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35), 0 0 15px rgba(6, 182, 212, 0.2) !important;
+  transition: all 0.25s ease !important;
+}
+
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-create *,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-action-glow *,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-save *,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-banner-connect *,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-urgency-action * {
+  color: #ffffff !important;
+}
+
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-create:hover,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-action-glow:hover,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-save:hover,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-banner-connect:hover,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .btn-urgency-action:hover {
+  box-shadow: 0 8px 28px rgba(37, 99, 235, 0.5), 0 0 25px rgba(6, 182, 212, 0.35) !important;
+  transform: translateY(-2px) scale(1.01) !important;
+}
+
+.theme-light .action-btn-circle {
+  background: #ffffff !important;
+  border-color: #bfdbfe !important;
+  color: #1d4ed8 !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08) !important;
+}
+
+.theme-light .action-btn-circle:hover {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+.theme-light .btn-secondary {
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+
+.theme-light .btn-secondary:hover {
+  background: #dbeafe !important;
+  color: #1e40af !important;
+  border-color: #3b82f6 !important;
+}
+
+.theme-light .back-btn {
+  color: #334155 !important;
+}
+
+.theme-light .back-btn:hover {
+  color: #2563eb !important;
+}
+
+.theme-light .search-bar {
+  background: #ffffff !important;
+  border: 1px solid #bfdbfe !important;
+}
+
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) input,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) select,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) textarea,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .form-input,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .form-select,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .form-textarea,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .pref-select,
+.theme-light:not(:has(app-bienvenida)):not(:has(app-login)) .custom-select {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.theme-light select option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.theme-light input::placeholder,
+.theme-light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.theme-light input:focus,
+.theme-light select:focus,
+.theme-light textarea:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+}
+
+/* ── 20. Tablas de Datos ── */
+.theme-light table,
+.theme-light .table-container,
+.theme-light .data-table,
+.theme-light .tax-table {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #dbeafe !important;
+}
+
+.theme-light th {
+  background: #eff6ff !important;
+  color: #1e3a8a !important;
+  border-bottom: 1px solid #dbeafe !important;
+  font-weight: 700 !important;
+}
+
+.theme-light td {
+  color: #1e293b !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.theme-light tr:hover {
+  background: #f0f7ff !important;
+}
+
+/* ── 21. Toggles, Modales y Asistente IA ── */
+.theme-light .toggle-track {
+  background: #cbd5e1 !important;
+  border-color: #94a3b8 !important;
+}
+
+.theme-light .toggle input:checked + .toggle-track {
+  background: linear-gradient(135deg, #2563eb, #06b6d4) !important;
+  border-color: transparent !important;
+}
+
+.theme-light .toggle-thumb {
+  background: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2) !important;
+}
+
+.theme-light .modal-overlay,
+.theme-light .dialog-backdrop,
+.theme-light .modal-backdrop {
+  background: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.theme-light .modal-card,
+.theme-light .dialog-content {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #dbeafe !important;
+  box-shadow: 0 20px 50px rgba(37, 99, 235, 0.12) !important;
+}
+
+.theme-light .floating-tip-card {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #93c5fd !important;
+  box-shadow: 0 10px 32px rgba(37, 99, 235, 0.12) !important;
+}
+
+.theme-light .tip-title {
+  color: #1d4ed8 !important;
+}
+
+.theme-light .tip-body {
+  color: #334155 !important;
+}
+
+.theme-light .input-bar {
+  background: #ffffff !important;
+  border: 1px solid #bfdbfe !important;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.06) !important;
+}
+
+.theme-light .empty-state {
+  color: #475569 !important;
+}

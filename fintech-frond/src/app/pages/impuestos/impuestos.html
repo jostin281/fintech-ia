@@ -1,0 +1,244 @@
+<!-- ══════════════════════════════════════════════════════
+     GESTIÓN TRIBUTARIA & IMPUESTOS ECUADOR (SRI)
+     Solo 2 formularios legales: 104 (IVA) y 107 (Retenciones
+     Relación de Dependencia). Ver comentario al inicio de
+     impuestos.ts para el origen de los números de casillero.
+     AESTHETICS: CYBER-FINTECH DARK GLASSMORPHISM NEON
+══════════════════════════════════════════════════════ -->
+<div class="page-root">
+
+  <!-- FONDO CON CANVAS NEURONAL -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <canvas #neuralCanvas style="position:absolute;inset:0;width:100%;height:100%;opacity:0.85;z-index:0;"></canvas>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- HEADER DE PÁGINA -->
+  <header class="page-header">
+    <a routerLink="/dashboard" class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+    <div class="header-center">
+      <h1 class="page-title flex items-center gap-2">
+        Impuestos Ecuador <span class="flag-icon">🇪🇨</span>
+      </h1>
+      <span class="header-badge connected flex items-center gap-1.5">
+        <span class="pulse-dot bg-cyan-400"></span>
+        🏛️ SRI · RUC: {{ userRuc() }} · Vence día {{ diaVencimientoSri() }}
+      </span>
+    </div>
+    <div class="header-actions">
+      <div class="form-group m-0">
+        <input type="text" class="form-input text-xs py-1.5 w-40" [(ngModel)]="userRuc" maxlength="13" placeholder="RUC / Cédula" />
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="page-main">
+
+    <!-- AVISO: solo 2 formularios legales del SRI en esta pantalla -->
+    <div class="glass-panel px-5 py-3 mb-4 border-l-4 border-cyan-400 text-xs text-slate-300 flex items-start gap-2">
+      <span class="text-base leading-none">ℹ️</span>
+      <span>Esta pantalla trabaja únicamente con el <strong>Formulario 104 (IVA)</strong> y el <strong>Formulario 107 (Retenciones en la Fuente por Ingresos del Trabajo en Relación de Dependencia)</strong>, siguiendo la numeración de casilleros de las guías oficiales del SRI. Los borradores generados son de referencia: verifica el casillero vigente en <strong>sri.gob.ec</strong> antes de presentar tu declaración real.</span>
+    </div>
+
+    <!-- MENÚ DE TABS: SOLO 104 Y 107 -->
+    <div class="nav-tabs-bar">
+      <button class="tab-btn" [class.active]="selectedTab() === '104'" (click)="setTab('104')">
+        🧾 Formulario 104 · IVA
+      </button>
+      <button class="tab-btn" [class.active]="selectedTab() === '107'" (click)="setTab('107')">
+        💼 Formulario 107 · Relación de Dependencia
+      </button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         FORMULARIO 104 — DECLARACIÓN DEL IVA
+    ══════════════════════════════════════════════════════ -->
+    @if (selectedTab() === '104') {
+      <div class="tab-content fade-in space-y-6">
+
+        <div class="glass-panel p-6">
+          <div class="flex justify-between items-center mb-6 border-b border-slate-700/60 pb-4">
+            <div>
+              <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                Formulario 104 SRI — Declaración del Impuesto al Valor Agregado (IVA)
+              </h2>
+              <p class="text-xs text-slate-400">Casilleros según la Guía para el llenado del Formulario IVA del SRI. Ingresa tus ventas y compras gravadas para calcular en tiempo real el saldo a pagar o crédito tributario.</p>
+            </div>
+            <span class="chip-cyan">Tarifa Vigente: 15%</span>
+          </div>
+
+          <div class="flex flex-wrap items-end gap-3 mb-6 pb-6 border-b border-slate-700/60">
+            <div class="form-group !mb-0">
+              <label class="form-label">Mes</label>
+              <select class="form-input" [(ngModel)]="ivaMesSeleccionado">
+                @for (nombreMes of nombresMeses; track nombreMes; let indice = $index) {
+                  <option [ngValue]="indice + 1">{{ nombreMes }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-group !mb-0">
+              <label class="form-label">Año</label>
+              <input type="number" class="form-input" [(ngModel)]="ivaAnioSeleccionado" style="width: 6rem" />
+            </div>
+            <button
+              class="btn-secondary"
+              type="button"
+              [disabled]="autocompletandoIva()"
+              (click)="autocompletarFormulario104()"
+            >
+              {{ autocompletandoIva() ? '⏳ Autocompletando...' : '✨ Autocompletar con mis datos' }}
+            </button>
+            <span class="text-xs text-slate-500">Trae tus facturas, compras y retenciones de este mes ya registradas en Fintech.</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <!-- ENTRADAS DE VENTAS Y COMPRAS -->
+            <div class="space-y-4">
+              <h3 class="text-sm font-bold text-cyan-300 uppercase tracking-wider">Ventas y otras operaciones</h3>
+
+              <div class="form-group">
+                <label class="form-label">Casillero 401 · Ventas gravadas tarifa 15% ($ USD):</label>
+                <input type="number" class="form-input" [(ngModel)]="ivaVentas15" min="0" placeholder="Ej: 2500" />
+                <span class="form-help">Casillero 429 · Impuesto generado en ventas: <strong>${{ ivaDebitoGenerado() | number:'1.2-2' }} USD</strong></span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Casillero 403 · Ventas gravadas tarifa 0% ($ USD):</label>
+                <input type="number" class="form-input" [(ngModel)]="ivaVentas0" min="0" placeholder="Ej: 400" />
+                @if (ivaVentas0() > 0) {
+                  <span class="form-help">⚖️ Casillero 563 · Factor de Proporcionalidad aplicado al crédito tributario: <strong>{{ ivaFactorProporcionalidad() * 100 | number:'1.1-1' }}%</strong></span>
+                }
+              </div>
+
+              <h3 class="text-sm font-bold text-cyan-300 uppercase tracking-wider pt-4">Adquisiciones y retenciones sufridas</h3>
+
+              <div class="form-group">
+                <label class="form-label">Casillero 500 · Adquisiciones gravadas 15% con derecho a crédito ($ USD):</label>
+                <input type="number" class="form-input" [(ngModel)]="ivaCompras15" min="0" placeholder="Ej: 1200" />
+                @if (ivaFactorProporcionalidad() < 1) {
+                  <span class="form-help">IVA de compras: ${{ ivaCreditoTributarioBruto() | number:'1.2-2' }} USD → Casillero 564 tras factor: <strong>${{ ivaCreditoPagado() | number:'1.2-2' }} USD</strong></span>
+                } @else {
+                  <span class="form-help">Casillero 564 · Crédito tributario aplicable: <strong>${{ ivaCreditoPagado() | number:'1.2-2' }} USD</strong></span>
+                }
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Casillero 609 · Retenciones de IVA recibidas ($ USD):</label>
+                <input type="number" class="form-input" [(ngModel)]="ivaRetencionesRecibidas" min="0" placeholder="Ej: 45" />
+                <span class="form-help">Monto retenido por tus clientes agentes de retención</span>
+              </div>
+            </div>
+
+            <!-- RESULTADO DE LA LIQUIDACIÓN -->
+            <div class="glass-panel p-6 bg-slate-900/60 flex flex-col justify-between border border-cyan-500/30">
+              <div>
+                <h3 class="text-base font-bold text-white mb-4 border-b border-slate-700/50 pb-2">
+                  🧮 Resumen impositivo (Formulario 104)
+                </h3>
+
+                <div class="space-y-3 text-sm">
+                  <div class="flex justify-between items-center text-slate-300">
+                    <span>(+) Casillero 429 · Impuesto generado en ventas:</span>
+                    <span class="font-mono text-cyan-400 font-semibold">+${{ ivaDebitoGenerado() | number:'1.2-2' }} USD</span>
+                  </div>
+
+                  <div class="flex justify-between items-center text-slate-300">
+                    <span>(-) Casillero 564 · Crédito tributario aplicable:</span>
+                    <span class="font-mono text-emerald-400 font-semibold">-${{ ivaCreditoPagado() | number:'1.2-2' }} USD</span>
+                  </div>
+
+                  @if (ivaFactorProporcionalidad() < 1) {
+                    <div class="flex justify-between items-center text-slate-500 text-xs -mt-2">
+                      <span>&nbsp;&nbsp;↳ Casillero 563 · Factor de Proporcionalidad:</span>
+                      <span class="font-mono">{{ ivaFactorProporcionalidad() * 100 | number:'1.1-1' }}%</span>
+                    </div>
+                  }
+
+                  <div class="flex justify-between items-center text-slate-300 border-t border-slate-800 pt-3">
+                    @if (ivaImpuestoCausado601() > 0) {
+                      <span>Casillero 601 · Impuesto causado:</span>
+                      <span class="font-mono text-slate-200 font-semibold">${{ ivaImpuestoCausado601() | number:'1.2-2' }} USD</span>
+                    } @else {
+                      <span>Casillero 602 · Crédito tributario que excede el impuesto generado:</span>
+                      <span class="font-mono text-slate-200 font-semibold">${{ ivaCreditoAplicable602() | number:'1.2-2' }} USD</span>
+                    }
+                  </div>
+
+                  <div class="flex justify-between items-center text-slate-300">
+                    <span>(-) Casillero 609 · Retenciones de IVA recibidas:</span>
+                    <span class="font-mono text-emerald-400 font-semibold">-${{ ivaRetencionesRecibidas() | number:'1.2-2' }} USD</span>
+                  </div>
+
+                  <div class="border-t border-slate-700 my-4 pt-3 flex justify-between items-center text-base font-bold">
+                    @if (ivaImpuestoNetoAPagar() > 0) {
+                      <span>Total a pagar:</span>
+                      <span class="font-mono text-rose-400 text-xl">${{ ivaImpuestoNetoAPagar() | number:'1.2-2' }} USD (A PAGAR)</span>
+                    } @else {
+                      <span>Casillero 615 · Saldo a tu favor:</span>
+                      <span class="font-mono text-emerald-400 text-xl">${{ ivaCreditoTributarioAFavor() | number:'1.2-2' }} USD (A FAVOR)</span>
+                    }
+                  </div>
+                </div>
+
+                @if (ivaImpuestoNetoAPagar() > 0) {
+                  <div class="bg-rose-500/10 border border-rose-500/30 rounded-lg p-3 text-xs text-rose-300 mt-4">
+                    ⚠️ Tienes una obligación de IVA a pagar por <strong>${{ ivaImpuestoNetoAPagar() | number:'1.2-2' }} USD</strong>. Debes presentar y cancelar antes del <strong>día {{ diaVencimientoSri() }}</strong> del mes subsiguiente.
+                  </div>
+                } @else {
+                  <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-xs text-emerald-300 mt-4">
+                    ✨ Casillero 615 · Saldo de <strong>Crédito Tributario a tu favor por ${{ ivaCreditoTributarioAFavor() | number:'1.2-2' }} USD</strong>, arrastrado para compensar IVA en los meses siguientes.
+                  </div>
+                }
+              </div>
+
+              <div class="mt-6 pt-4 border-t border-slate-800 flex gap-3">
+                <button class="btn-create w-full" [disabled]="exportandoBorrador()" (click)="generarBorrador104()">
+                  {{ exportandoBorrador() ? '⏳ Generando PDF...' : '🧾 Generar Borrador Formulario 104 SRI' }}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    }
+
+    <!-- ══════════════════════════════════════════════════════
+         FORMULARIO 107 / ANEXO RDEP — módulo persistido (BD),
+         con historial, validaciones oficiales y generación del
+         PDF de consulta + el anexo Excel oficial del SRI.
+         Ver rdep/rdep-listado.* y rdep/rdep-formulario.*
+    ══════════════════════════════════════════════════════ -->
+    @if (selectedTab() === '107') {
+      <div class="tab-content fade-in space-y-6">
+        <div class="glass-panel p-6 rdep-host">
+          @if (vistaRdep() === 'lista') {
+            <app-rdep-listado (nuevo)="abrirNuevoRdep()" (editar)="abrirEditarRdep($event)"></app-rdep-listado>
+          } @else {
+            <app-rdep-formulario
+              [formularioId]="rdepEditandoId()"
+              (guardado)="onRdepGuardado()"
+              (cancelado)="volverListadoRdep()"
+            ></app-rdep-formulario>
+          }
+        </div>
+      </div>
+    }
+
+  </main>
+</div>
+
+<!-- TOAST NOTIFICATION -->
+@if (toastMessage()) {
+  <div class="toast-notification">
+    {{ toastMessage() }}
+  </div>
+}

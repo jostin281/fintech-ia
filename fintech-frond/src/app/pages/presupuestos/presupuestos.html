@@ -1,0 +1,235 @@
+<!-- ══════════════════════════════════════════════════════
+     PRESUPUESTOS
+══════════════════════════════════════════════════════ -->
+<div class="page-root">
+
+  <!-- FONDO ESTÁTICO LIMPIO SIN ANIMACIONES -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <a routerLink="/dashboard" class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+    <div class="header-center">
+      <h1 class="page-title">Presupuestos Inteligentes</h1>
+      <span class="header-badge">Control de Gastos</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-create" (click)="openCreateModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo Presupuesto
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL CON SCROLL SUAVE -->
+  <main class="page-main">
+
+    <!-- RESUMEN KPI GLOBAL -->
+    <div class="kpi-grid">
+      <div class="kpi-card purple">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+        </div>
+        <div>
+          <p class="kpi-label">Presupuesto Asignado</p>
+          <p class="kpi-value">${{ totalLimit() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+        </div>
+      </div>
+
+      <div class="kpi-card cyan">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div>
+          <p class="kpi-label">Gastado Hasta la Fecha</p>
+          <p class="kpi-value">${{ totalSpent() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+        </div>
+      </div>
+
+      <div class="kpi-card emerald">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div>
+          <p class="kpi-label">Disponible Restante</p>
+          <p class="kpi-value">${{ totalRemaining() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTROS Y CONTROLES -->
+    <div class="toolbar">
+      <div class="filter-pills">
+        <button (click)="setFilter('todos')" [class.active]="filter() === 'todos'" class="filter-pill">
+          Todos <span class="pill-cnt">{{ budgets().length }}</span>
+        </button>
+        <button (click)="setFilter('rango')" [class.active]="filter() === 'rango'" class="filter-pill green">
+          En Rango
+        </button>
+        <button (click)="setFilter('alerta')" [class.active]="filter() === 'alerta'" class="filter-pill amber">
+          En Alerta
+        </button>
+        <button (click)="setFilter('excedido')" [class.active]="filter() === 'excedido'" class="filter-pill red">
+          Excedidos
+        </button>
+      </div>
+    </div>
+
+    <!-- GRID DE PRESUPUESTOS POR CATEGORÍA -->
+    <div class="budgets-grid">
+      @for (b of filteredBudgets(); track b.id) {
+        <div class="budget-card group" [class]="getStatusClass(b.spent, b.limit)">
+          
+          <div class="budget-top">
+            <div class="budget-cat-info">
+              <span class="budget-icon" [style.background-color]="b.color + '25'">{{ b.icon }}</span>
+              <div>
+                <h3 class="budget-category">{{ b.category }}</h3>
+                <p class="budget-sub">Límite mensual: ${{ b.limit | number:'1.0-0' }} MXN</p>
+              </div>
+            </div>
+
+            <span class="status-chip" [class]="getStatusClass(b.spent, b.limit)">
+              {{ getStatusLabel(b.spent, b.limit) }}
+            </span>
+          </div>
+
+          <!-- Montos -->
+          <div class="budget-amounts">
+            <div>
+              <span class="lbl">Gastado</span>
+              <p class="val">${{ b.spent | number:'1.0-0' }}</p>
+            </div>
+            <div class="text-right">
+              <span class="lbl">Disponible</span>
+              <p class="val" [class.negative]="b.limit - b.spent < 0">
+                ${{ (b.limit - b.spent) | number:'1.0-0' }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Barra de Progreso con Porcentaje -->
+          <div class="progress-wrap">
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" 
+                   [style.width.%]="getPercent(b.spent, b.limit)"
+                   [style.background-color]="b.spent > b.limit ? '#f87171' : b.color"></div>
+            </div>
+            <span class="progress-text">{{ getPercent(b.spent, b.limit) }}%</span>
+          </div>
+
+          <!-- Acciones de tarjeta -->
+          <div class="card-actions">
+            <button class="btn-action-add" (click)="openExpenseModal(b.id)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              + Registrar Gasto
+            </button>
+
+            <button class="btn-action-delete" (click)="deleteBudget(b.id)" title="Eliminar presupuesto">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            </button>
+          </div>
+
+        </div>
+      }
+    </div>
+
+  </main>
+
+  <!-- MODAL: CREAR NUEVO PRESUPUESTO -->
+  @if (showModal()) {
+    <div class="modal-backdrop" (click)="closeCreateModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Nuevo Presupuesto</h3>
+          <button class="btn-close" (click)="closeCreateModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Categoría de Gasto</label>
+            <select class="form-input" [value]="formCategoriaId()" (change)="formCategoriaId.set(+$any($event.target).value)">
+              @for (cat of categoriasDisponibles(); track cat.id) {
+                <option [value]="cat.id">{{ cat.nombre }}</option>
+              }
+            </select>
+            @if (categoriasDisponibles().length === 0) {
+              <p class="text-[11px] text-amber-400 mt-1">Todas tus categorías de gasto ya tienen presupuesto este mes.</p>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Límite Mensual ($ USD)</label>
+            <input type="number" class="form-input" placeholder="500"
+              [value]="formLimit() ?? ''" (input)="formLimit.set($any($event.target).valueAsNumber)" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeCreateModal()">Cancelar</button>
+          <button class="btn-save" [disabled]="saving()" (click)="saveBudget()">{{ saving() ? 'Guardando...' : 'Guardar Presupuesto' }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: REGISTRAR GASTO EN PRESUPUESTO -->
+  @if (showExpenseModal()) {
+    <div class="modal-backdrop" (click)="closeExpenseModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Registrar Gasto Rápido</h3>
+          <button class="btn-close" (click)="closeExpenseModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Concepto del Gasto</label>
+            <input type="text" class="form-input" placeholder="Ej. Compras del fin de semana" 
+              [value]="expenseConcept()" (input)="expenseConcept.set($any($event.target).value)" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Monto ($ MXN)</label>
+            <input type="number" class="form-input" placeholder="450" 
+              [value]="expenseAmount() ?? ''" (input)="expenseAmount.set($any($event.target).valueAsNumber)" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeExpenseModal()">Cancelar</button>
+          <button class="btn-save" (click)="addExpense()">Confirmar Gasto</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TOAST -->
+  @if (toastMessage()) {
+    <div class="toast-notification">
+      {{ toastMessage() }}
+    </div>
+  }
+
+  <!-- FLOATING IA SAVING TIP CARD -->
+  @if (showTipWidget()) {
+    <div class="floating-tip-card">
+      <div class="tip-header">
+        <div class="flex items-center gap-2">
+          <span class="tip-icon">💡</span>
+          <span class="tip-title">Consejo de Ahorro IA</span>
+        </div>
+        <button class="btn-close-tip" (click)="showTipWidget.set(false)" title="Cerrar consejo">✕</button>
+      </div>
+      <p class="tip-body">
+        <strong>Regla del Micro-Ahorro:</strong> Redondear tus compras al dólar más cercano genera un excedente de $420 USD al año sin afectar tu estilo de vida.
+      </p>
+    </div>
+  }
+
+</div>

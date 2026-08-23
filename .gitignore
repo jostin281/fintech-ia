@@ -1,0 +1,28 @@
+# Node / npm
+node_modules/
+dist/
+build/
+*.log
+npm-debug.log*
+
+# Env / credenciales
+.env
+.env.*
+credenciales.env
+!*.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Descargas / temporales generadas por automatizacion-sri
+automatizacion-sri/descargas/
+_to_delete/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,280 @@
+<!-- ══════════════════════════════════════════════════════
+     METAS DE AHORRO
+══════════════════════════════════════════════════════ -->
+<div class="page-root">
+
+  <!-- FONDO ESTÁTICO LIMPIO SIN ANIMACIONES -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <a routerLink="/dashboard" class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+    <div class="header-center">
+      <h1 class="page-title">Metas de Ahorro</h1>
+      <span class="header-badge">Crecimiento Financiero</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-create" (click)="openCreateModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nueva Meta
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="page-main">
+
+    <!-- KPI SUMMARY GRID -->
+    <div class="kpi-grid">
+      <div class="kpi-card cyan">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </div>
+        <div>
+          <p class="kpi-label">Ahorro Acumulado Total</p>
+          <p class="kpi-value">${{ totalSaved() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+        </div>
+      </div>
+
+      <div class="kpi-card purple">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <div>
+          <p class="kpi-label">Objetivo Global Combinado</p>
+          <p class="kpi-value">${{ totalTarget() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+        </div>
+      </div>
+
+      <div class="kpi-card emerald">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div>
+          <p class="kpi-label">Metas Completadas</p>
+          <p class="kpi-value">{{ completedCount() }} <span class="kpi-curr">de {{ goals().length }} metas</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- BARRA DE PROGRESO GLOBAL -->
+    <div class="global-progress-card">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Progreso Global de Ahorros</span>
+          <span class="global-pct-chip">{{ globalPercent() }}%</span>
+        </div>
+        <span class="text-xs text-slate-400">
+          Faltan ${{ (totalTarget() - totalSaved()) | number:'1.0-0' }} MXN para el 100%
+        </span>
+      </div>
+      
+      <div class="global-bar-bg">
+        <div class="global-bar-fill" [style.width.%]="globalPercent()"></div>
+      </div>
+    </div>
+
+    <!-- TOOLBAR & FILTERS -->
+    <div class="toolbar">
+      <div class="filter-pills">
+        <button (click)="setFilter('todas')" [class.active]="filter() === 'todas'" class="filter-pill">
+          Todas <span class="pill-cnt">{{ goals().length }}</span>
+        </button>
+        <button (click)="setFilter('en_curso')" [class.active]="filter() === 'en_curso'" class="filter-pill cyan">
+          En Curso
+        </button>
+        <button (click)="setFilter('completadas')" [class.active]="filter() === 'completadas'" class="filter-pill emerald">
+          Completadas ({{ completedCount() }})
+        </button>
+      </div>
+    </div>
+
+    <!-- GOALS GRID -->
+    <div class="goals-grid">
+      @for (g of filteredGoals(); track g.id) {
+        <div class="goal-card group" [class.is-completed]="g.current >= g.target">
+          
+          <div class="goal-top">
+            <div class="goal-info-left">
+              <span class="goal-avatar" [style.background-color]="g.color + '25'" [style.border-color]="g.color + '50'">
+                {{ g.icon }}
+              </span>
+              <div>
+                <h3 class="goal-name">{{ g.name }}</h3>
+                <span class="goal-cat-chip">{{ g.category }}</span>
+              </div>
+            </div>
+
+            @if (g.current >= g.target) {
+              <span class="complete-badge">✓ Completada</span>
+            } @else {
+              <span class="date-badge">🎯 {{ g.deadline }}</span>
+            }
+          </div>
+
+          <!-- Montos -->
+          <div class="goal-amounts">
+            <div>
+              <span class="lbl">Ahorrado</span>
+              <p class="val text-cyan-400">${{ g.current | number:'1.0-0' }}</p>
+            </div>
+            <div class="text-right">
+              <span class="lbl">Meta Objetivo</span>
+              <p class="val">${{ g.target | number:'1.0-0' }}</p>
+            </div>
+          </div>
+
+          <!-- Barra de Progreso -->
+          <div class="progress-wrap">
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" 
+                   [style.width.%]="getPercent(g.current, g.target)"
+                   [style.background-color]="g.color"></div>
+            </div>
+            <span class="progress-pct" [style.color]="g.color">{{ getPercent(g.current, g.target) }}%</span>
+          </div>
+
+          <!-- Sugerencia Aporte Mensual -->
+          @if (g.current < g.target) {
+            <div class="deposit-hint flex items-center justify-between text-[11px] text-slate-400 bg-white/5 p-2 rounded-lg">
+              <span>Aporte mensual sugerido:</span>
+              <span class="font-bold text-white">${{ g.monthlyDeposit | number:'1.0-0' }} MXN/mes</span>
+            </div>
+          }
+
+          <!-- Acciones de tarjeta -->
+          <div class="card-actions">
+            @if (g.current < g.target) {
+              <button class="btn-action-deposit" (click)="openDepositModal(g.id)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                + Abonar Ahorro
+              </button>
+            } @else {
+              <div class="text-xs text-emerald-400 font-bold flex items-center gap-1 flex-1 justify-center py-1">
+                🎉 ¡Objetivo Alcanzado!
+              </div>
+            }
+
+            <button class="btn-action-delete" (click)="deleteGoal(g.id)" title="Eliminar meta">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            </button>
+          </div>
+
+        </div>
+      }
+    </div>
+
+  </main>
+
+  <!-- MODAL: CREAR NUEVA META -->
+  @if (showCreateModal()) {
+    <div class="modal-backdrop" (click)="closeCreateModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Nueva Meta de Ahorro</h3>
+          <button class="btn-close" (click)="closeCreateModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nombre del Objetivo</label>
+            <input type="text" class="form-input" placeholder="Ej. Fondo de Reserva o Viaje" 
+              [value]="formName()" (input)="formName.set($any($event.target).value)" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label class="form-label">Monto Objetivo ($ MXN)</label>
+              <input type="number" class="form-input" placeholder="50000" 
+                [value]="formTarget() ?? ''" (input)="formTarget.set($any($event.target).valueAsNumber)" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Aporte Inicial ($ MXN)</label>
+              <input type="number" class="form-input" placeholder="5000" 
+                [value]="formInitial() ?? ''" (input)="formInitial.set($any($event.target).valueAsNumber)" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Fecha Límite</label>
+            <input type="date" class="form-input" [value]="formDeadline()" (input)="formDeadline.set($any($event.target).value)" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label class="form-label">Ícono Emoji</label>
+              <input type="text" class="form-input text-center" placeholder="🎯" 
+                [value]="formIcon()" (input)="formIcon.set($any($event.target).value)" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Color Distintivo</label>
+              <input type="color" class="form-input h-10 p-1 cursor-pointer" 
+                [value]="formColor()" (input)="formColor.set($any($event.target).value)" />
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeCreateModal()">Cancelar</button>
+          <button class="btn-save" [disabled]="saving()" (click)="saveGoal()">{{ saving() ? 'Creando...' : 'Crear Meta' }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: ABONAR A META -->
+  @if (showDepositModal()) {
+    <div class="modal-backdrop" (click)="closeDepositModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Abonar a tu Meta</h3>
+          <button class="btn-close" (click)="closeDepositModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Monto a Abonar ($ MXN)</label>
+            <input type="number" class="form-input text-lg font-bold text-cyan-400" placeholder="1000" 
+              [value]="depositAmount() ?? ''" (input)="depositAmount.set($any($event.target).valueAsNumber)" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeDepositModal()">Cancelar</button>
+          <button class="btn-save" (click)="addDeposit()">Confirmar Abono</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TOAST -->
+  @if (toastMessage()) {
+    <div class="toast-notification">
+      {{ toastMessage() }}
+    </div>
+  }
+
+  <!-- FLOATING IA SAVING TIP CARD -->
+  @if (showTipWidget()) {
+    <div class="floating-tip-card">
+      <div class="tip-header">
+        <div class="flex items-center gap-2">
+          <span class="tip-icon">🎯</span>
+          <span class="tip-title">Hack de Ahorro IA</span>
+        </div>
+        <button class="btn-close-tip" (click)="showTipWidget.set(false)" title="Cerrar consejo">✕</button>
+      </div>
+      <p class="tip-body">
+        <strong>Regla de las 48 Horas:</strong> Antes de una compra no planificada mayor a $100 USD, espera 48h. El 70% de los impulsos se desvanecen y se convierten en abono para tus metas.
+      </p>
+    </div>
+  }
+
+</div>

@@ -1,0 +1,124 @@
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      typography: Roboto,
+      density: -2,
+    )
+  );
+}
+
+/*
+ * Formulario 107 / RDEP (pantalla de Impuestos): tema de Angular Material
+ * en modo OSCURO, acoplado a la estética "cyber-fintech glassmorphism neon"
+ * del resto de la pantalla (fondo #030712, paneles rgba(15,23,42,.65) con
+ * blur, acentos cian/violeta). Se aplica escopado a ".rdep-host" (el
+ * contenedor de <app-rdep-listado>/<app-rdep-formulario>) y no al <html>
+ * global, para no afectar el resto de la aplicación (que no usa Angular
+ * Material en ninguna otra pantalla).
+ *
+ * Primario cian y terciario violeta para que los botones/enfoques de
+ * Material usen la misma paleta de acento que el resto de la app
+ * (#00f2fe / #a855f7), en vez del azul por defecto.
+ */
+.rdep-host {
+  @include mat.theme(
+    (
+      color: (
+        theme-type: dark,
+        primary: mat.$cyan-palette,
+        tertiary: mat.$violet-palette,
+      ),
+      typography: Roboto,
+      // -1 en vez de -2: campos y botones un poco más altos, con más aire,
+      // para que el formulario no se sienta apretado.
+      density: -1,
+    )
+  );
+}
+
+/*
+ * Variante en modo CLARO del tema de Material de RDEP: mismos acentos cian/
+ * violeta, pero con "theme-type: light" para que las tarjetas, campos y
+ * botones de Material usen tokens claros cuando el usuario activa el Modo
+ * Claro global de la app (clase ".theme-light" que ThemeService agrega a
+ * <html>/<body>). Al tener dos clases, ".theme-light .rdep-host" tiene más
+ * especificidad que ".rdep-host" de arriba y lo sobrescribe automáticamente
+ * cuando el Modo Claro está activo, sin importar el orden en el archivo.
+ */
+.theme-light .rdep-host {
+  @include mat.theme(
+    (
+      color: (
+        theme-type: light,
+        primary: mat.$cyan-palette,
+        tertiary: mat.$violet-palette,
+      ),
+      typography: Roboto,
+      density: -1,
+    )
+  );
+}
+
+/*
+ * Los overlays de Angular Material (el panel desplegable de mat-select, los
+ * tooltips) se insertan por fuera de ".rdep-host" — en un contenedor global
+ * al final de <body> —, así que no heredan el tema de arriba. Se fuerzan
+ * aquí con colores fijos: oscuros por defecto, y claros cuando <body> tiene
+ * ".theme-light" (ThemeService se la agrega también a <body>, no solo a
+ * <html>).
+ */
+.cdk-overlay-container .mat-mdc-select-panel {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.cdk-overlay-container .mat-mdc-select-panel .mdc-list-item__primary-text {
+  color: #e2e8f0;
+}
+.cdk-overlay-container .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text {
+  color: #00f2fe;
+}
+.cdk-overlay-container .mat-mdc-tooltip .mdc-tooltip__surface {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+body.theme-light .cdk-overlay-container .mat-mdc-select-panel {
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+}
+body.theme-light .cdk-overlay-container .mat-mdc-select-panel .mdc-list-item__primary-text {
+  color: #0f172a;
+}
+body.theme-light .cdk-overlay-container .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text {
+  color: #0284c7;
+}
+
+body {
+  // Default the application to a light color theme. This can be changed to
+  // `dark` to enable the dark color theme, or to `light dark` to defer to the
+  // user's system settings.
+  color-scheme: light;
+
+  // Set a default background, font and text colors for the application using
+  // Angular Material's system-level CSS variables. Learn more about these
+  // variables at https://material.angular.dev/guide/system-variables
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+
+  // Reset the user agent margin.
+  margin: 0;
+  height: 100%;
+}

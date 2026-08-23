@@ -1,0 +1,207 @@
+<!-- ══════════════════════════════════════════════════════
+     NOTIFICACIONES & ALERTAS DE URGENCIA
+══════════════════════════════════════════════════════ -->
+<div class="page-root">
+
+  <!-- FONDO ESTÁTICO LIMPIO SIN ANIMACIONES -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <a routerLink="/dashboard" class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+    <div class="header-center">
+      <h1 class="page-title flex items-center gap-2">
+        Centro de Alertas & Notificaciones
+        @if (unreadCount() > 0) {
+          <span class="badge-unread animate-bounce">{{ unreadCount() }} Nuevas</span>
+        }
+      </h1>
+      <span class="header-sub">Monitoreo de riesgos y desviaciones presupuestarias 24/7</span>
+    </div>
+    <div class="header-actions">
+      @if (unreadCount() > 0) {
+        <button class="btn-action-text" (click)="markAllRead()">
+          ✓ Marcar todas leídas
+        </button>
+      }
+      <button class="btn-action-text danger" (click)="showClearConfirm.set(true)">
+        🗑️ Vaciar
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="page-main">
+
+    <!-- URGENCY SUMMARY BANNER -->
+    @if (criticalCount() > 0) {
+      <div class="urgency-banner">
+        <div class="urgency-icon animate-pulse">🚨</div>
+        <div class="urgency-info">
+          <h3 class="urgency-title">¡Atención requerida! Tienes {{ criticalCount() }} alertas financieras críticas</h3>
+          <p class="urgency-sub">Se detectó exceso de presupuesto en categorías clave y riesgo de déficit mensual.</p>
+        </div>
+        <a routerLink="/presupuestos" class="btn-urgency-action">
+          Corregir Presupuestos →
+        </a>
+      </div>
+    }
+
+    <!-- FILTROS Y PÍLDORAS -->
+    <div class="toolbar">
+      <div class="filter-pills">
+        <button (click)="setFilter('todas')" [class.active]="filter() === 'todas'" class="filter-pill">
+          Todas <span class="pill-cnt">{{ items().length }}</span>
+        </button>
+        <button (click)="setFilter('no-leidas')" [class.active]="filter() === 'no-leidas'" class="filter-pill red">
+          Sin Leer <span class="pill-cnt red">{{ unreadCount() }}</span>
+        </button>
+        <button (click)="setFilter('alertas')" [class.active]="filter() === 'alertas'" class="filter-pill amber">
+          ⚠️ Alertas de Riesgo
+        </button>
+        <button (click)="setFilter('sistema')" [class.active]="filter() === 'sistema'" class="filter-pill cyan">
+          ℹ️ Sistema & SRI
+        </button>
+      </div>
+    </div>
+
+    <!-- LISTA DE NOTIFICACIONES -->
+    <div class="notif-container">
+      @if (filtered().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">🔔</div>
+          <h3>Sin notificaciones en esta categoría</h3>
+          <p>Tus finanzas están bajo control y al día.</p>
+        </div>
+      } @else {
+        <div class="notif-list">
+          @for (item of filtered(); track item.id) {
+            <div class="notif-card group cursor-pointer" 
+                 (click)="openNotifModal(item)"
+                 [class.unread]="!item.read" 
+                 [class.critica]="item.type === 'critica'"
+                 [style.border-left-color]="typeColor(item.type)">
+
+              <div class="notif-icon-wrap" [style.background-color]="typeBg(item.type)" [style.border-color]="typeBorder(item.type)">
+                <span class="text-lg">{{ typeIcon(item.type) }}</span>
+              </div>
+
+              <div class="notif-content">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  <h4 class="notif-title" [style.color]="typeColor(item.type)">{{ item.title }}</h4>
+                  <span class="notif-time">{{ item.time }}</span>
+                </div>
+                <p class="notif-body">{{ item.body }}</p>
+
+                <div class="notif-action-row mt-2 flex items-center justify-between">
+                  <span class="text-[11px] text-cyan-400 font-semibold group-hover:underline">
+                    Ver Alerta Detallada 🔍
+                  </span>
+                  @if (item.actionUrl) {
+                    <span class="text-[11px] text-purple-300 font-bold">
+                      {{ item.actionText || 'Ir a la sección' }} →
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <div class="notif-item-actions" (click)="$event.stopPropagation()">
+                @if (!item.read) {
+                  <button class="btn-icon-check" (click)="markRead(item.id)" title="Marcar como leída">
+                    ✓
+                  </button>
+                }
+                <button class="btn-icon-delete" (click)="deleteNotif(item.id)" title="Eliminar">
+                  ✕
+                </button>
+              </div>
+
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+  </main>
+
+  <!-- MODAL CUADRO DE ALERTA AL ABRIR UNA NOTIFICACIÓN -->
+  @if (selectedNotif()) {
+    <div class="modal-backdrop" (click)="closeNotifModal()">
+      <div class="alert-modal-card" [class.critica]="selectedNotif()?.type === 'critica'" (click)="$event.stopPropagation()">
+        
+        <div class="alert-modal-header" [style.border-bottom-color]="typeBorder(selectedNotif()!.type)">
+          <div class="flex items-center gap-3">
+            <span class="alert-modal-icon" [style.background]="typeBg(selectedNotif()!.type)">
+              {{ typeIcon(selectedNotif()!.type) }}
+            </span>
+            <div>
+              <span class="alert-modal-tag" [style.color]="typeColor(selectedNotif()!.type)">
+                {{ selectedNotif()!.type === 'critica' ? '🚨 ALERTA CRÍTICA FINANCIERA' : selectedNotif()!.type === 'warning' ? '⚠️ ADVERTENCIA DE GASTO' : 'ℹ️ NOTIFICACIÓN SISTEMA' }}
+              </span>
+              <h3 class="alert-modal-title">{{ selectedNotif()!.title }}</h3>
+            </div>
+          </div>
+          <button class="btn-close" (click)="closeNotifModal()">✕</button>
+        </div>
+
+        <div class="alert-modal-body">
+          <div class="alert-message-box" [style.border-color]="typeBorder(selectedNotif()!.type)">
+            <p class="alert-text">{{ selectedNotif()!.body }}</p>
+            <div class="alert-meta">
+              <span>⏰ {{ selectedNotif()!.time }}</span>
+              <span>Categoría: {{ selectedNotif()!.category.toUpperCase() }}</span>
+            </div>
+          </div>
+
+          <div class="ai-recommendation-box">
+            <span class="ai-box-title">🤖 Recomendación del Asistente FintechAI:</span>
+            <p class="ai-box-desc">
+              {{ selectedNotif()!.type === 'critica' 
+                 ? 'Te sugerimos congelar consumos no esenciales en esta categoría y transferir excedentes de otra partida antes del cierre mensual.' 
+                 : 'Mantén un monitoreo estrecho de tus movimientos para evitar llegar al límite fijado.' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="alert-modal-footer">
+          <button class="btn-cancel" (click)="closeNotifModal()">Cerrar / Entendido</button>
+          @if (selectedNotif()?.actionUrl) {
+            <button class="btn-save alert-btn" (click)="navigateToSection(selectedNotif()?.actionUrl)">
+              ⚡ {{ selectedNotif()?.actionText || 'Resolver Ahora' }}
+            </button>
+          }
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: CONFIRMAR VACÍO -->
+  @if (showClearConfirm()) {
+    <div class="modal-backdrop" (click)="showClearConfirm.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">¿Eliminar todas las notificaciones?</h3>
+          <button class="btn-close" (click)="showClearConfirm.set(false)">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="text-xs text-slate-300">
+            Esta acción eliminará de forma permanente todas las alertas financieras de tu bandeja.
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="showClearConfirm.set(false)">Cancelar</button>
+          <button class="btn-save danger" (click)="clearAll()">Eliminar Todo</button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>
