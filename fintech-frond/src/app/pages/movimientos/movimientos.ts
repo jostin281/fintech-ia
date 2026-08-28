@@ -170,8 +170,44 @@ export class Movimientos implements AfterViewInit, OnDestroy {
     }
   }
 
+  /** Exportación real: genera un CSV con los movimientos visibles (respeta filtro/búsqueda) y lo descarga. */
   exportData() {
-    this.triggerToast('Exportando reporte de movimientos en CSV... 📥');
+    if (!this.isBrowser) return;
+
+    const filas = this.filteredMovements();
+    if (filas.length === 0) {
+      this.triggerToast('No hay movimientos para exportar con el filtro actual.');
+      return;
+    }
+
+    const escapar = (valor: string) => `"${valor.replace(/"/g, '""')}"`;
+    const encabezado = ['Fecha', 'Concepto', 'Categoría', 'Tipo', 'Monto (USD)', 'Método', 'Estado'];
+    const lineas = filas.map((m) => {
+      const monto = m.type === 'ingreso' ? m.amount : -m.amount;
+      return [
+        escapar(m.date),
+        escapar(m.concept),
+        escapar(m.category),
+        escapar(m.type === 'ingreso' ? 'Ingreso' : 'Egreso'),
+        monto.toFixed(2),
+        escapar(m.method),
+        escapar(m.status),
+      ].join(',');
+    });
+    const csv = '\ufeff' + [encabezado.join(','), ...lineas].join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const fecha = new Date().toISOString().slice(0, 10);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `movimientos_${fecha}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    this.triggerToast(`Descargado movimientos_${fecha}.csv (${filas.length} registros) 📥`);
   }
 
   private triggerToast(msg: string) {

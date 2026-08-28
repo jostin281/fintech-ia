@@ -134,23 +134,30 @@
               <span class="text-[10px] text-slate-400">· Actualizado en tiempo real</span>
             </div>
             <h2 class="card-title text-slate-300">Balance Total Disponible</h2>
+            <p class="balance-scope-hint">Histórico completo · los recuadros de abajo son solo de este mes</p>
           </div>
 
-          <!-- Currency selector tabs -->
+          <!-- Única moneda de la app: USD -->
           <div class="currency-tabs">
-            <button (click)="setCurrency('MXN')" [class.active]="selectedCurrency() === 'MXN'" class="curr-tab">MXN</button>
-            <button (click)="setCurrency('USD')" [class.active]="selectedCurrency() === 'USD'" class="curr-tab">USD</button>
-            <button (click)="setCurrency('EUR')" [class.active]="selectedCurrency() === 'EUR'" class="curr-tab">EUR</button>
+            <span class="curr-tab active">USD</span>
           </div>
         </div>
 
         <div class="balance-main-display">
           <div class="balance-amount">
             <span class="currency-symbol">$</span>{{ totalBalance() | number:'1.2-2' }}
-            <span class="growth-badge">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-              +18.4%
-            </span>
+            @if (balanceChangePercent(); as variacion) {
+              <span class="growth-badge" [class.negative]="variacion < 0">
+                @if (variacion >= 0) {
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                } @else {
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+                }
+                {{ variacion >= 0 ? '+' : '' }}{{ variacion }}%
+              </span>
+            } @else {
+              <span class="growth-badge neutral" title="Aún no hay movimientos del mes anterior para comparar">Sin mes anterior</span>
+            }
           </div>
 
           <!-- Mini SVG Trend Line Graphic -->
@@ -162,10 +169,10 @@
                   <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
                 </linearGradient>
               </defs>
-              <path d="M0,45 Q50,20 100,35 T200,15 T300,5 L300,60 L0,60 Z" fill="url(#chartGrad)" />
-              <path d="M0,45 Q50,20 100,35 T200,15 T300,5" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
-              <circle cx="300" cy="5" r="4" fill="#22d3ee" class="animate-ping" />
-              <circle cx="300" cy="5" r="4" fill="#22d3ee" />
+              <path [attr.d]="balanceTrend().area" fill="url(#chartGrad)" />
+              <path [attr.d]="balanceTrend().linea" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
+              <circle [attr.cx]="balanceTrend().puntoFinal.x" [attr.cy]="balanceTrend().puntoFinal.y" r="4" fill="#22d3ee" class="animate-ping" />
+              <circle [attr.cx]="balanceTrend().puntoFinal.x" [attr.cy]="balanceTrend().puntoFinal.y" r="4" fill="#22d3ee" />
             </svg>
           </div>
         </div>
@@ -207,26 +214,26 @@
           <span class="text-[11px] text-slate-500">Operaciones 1-Click</span>
         </div>
         <div class="actions-grid">
-          <button (click)="openTransferModal()" class="quick-btn group cursor-pointer">
+          <a routerLink="/movimientos" class="quick-btn group cursor-pointer">
             <div class="icon-wrap cyan">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </div>
-            <span>Transferir</span>
-          </button>
+            <span>Registrar Movimiento</span>
+          </a>
 
-          <button (click)="openBillModal()" class="quick-btn group cursor-pointer">
+          <a routerLink="/facturacion-electronica" [queryParams]="{ tab: 'facturas' }" class="quick-btn group cursor-pointer">
             <div class="icon-wrap purple">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
             </div>
-            <span>Facturar</span>
-          </button>
+            <span>Emitir Factura</span>
+          </a>
 
-          <button (click)="openPayServiceModal()" class="quick-btn group cursor-pointer">
+          <a routerLink="/facturacion-electronica" [queryParams]="{ tab: 'comprobantes-recibidos' }" class="quick-btn group cursor-pointer">
             <div class="icon-wrap emerald">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10.00 10.00 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <span>Pagar</span>
-          </button>
+            <span>Importar Comprobante</span>
+          </a>
 
           <button (click)="openGoalModal()" class="quick-btn group cursor-pointer">
             <div class="icon-wrap amber">
@@ -255,7 +262,7 @@
           </a>
         </div>
         <p class="text-xs text-slate-300 leading-relaxed mb-3">
-          "Tus gastos en la categoría <strong class="text-white">Servicios</strong> han disminuido un <strong class="text-emerald-400">12%</strong> respecto al periodo anterior. Proyección de ahorro fin de mes: <strong class="text-cyan-400">$3,420 MXN</strong>."
+          "Tus gastos en la categoría <strong class="text-white">Servicios</strong> han disminuido un <strong class="text-emerald-400">12%</strong> respecto al periodo anterior. Proyección de ahorro fin de mes: <strong class="text-cyan-400">$3,420 USD</strong>."
         </p>
         <div class="flex items-center justify-between text-[10px] text-slate-400 border-t border-white/10 pt-2.5">
         <span>Confianza del modelo: 98.4%</span>
@@ -296,7 +303,7 @@
                 <p class="tx-date">{{ tx.category }} • {{ tx.date }}</p>
               </div>
               <div class="tx-amount" [class.positive]="tx.type === 'ingreso'" [class.negative]="tx.type === 'egreso'">
-                {{ tx.type === 'ingreso' ? '+' : '' }}{{ tx.amount | number:'1.2-2' }} <span class="text-[10px] opacity-70">MXN</span>
+                {{ tx.type === 'ingreso' ? '+' : '' }}{{ tx.amount | number:'1.2-2' }} <span class="text-[10px] opacity-70">USD</span>
               </div>
             </div>
           }
@@ -389,8 +396,8 @@
             <!-- Lista de presupuestos en rojo -->
             @if (exceededBudgets().length > 0) {
               <div class="space-y-2">
-                <p class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Presupuestos Excedidos:</p>
-                @for (b of exceededBudgets(); track b.id) {
+                <p class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Presupuestos Excedidos ({{ exceededBudgets().length }}):</p>
+                @for (b of exceededBudgetsPreview(); track b.id) {
                   <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/70 border border-red-500/30">
                     <div class="flex items-center gap-2.5">
                       <span class="text-base">{{ b.icon }}</span>
@@ -402,20 +409,30 @@
                     <span class="px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] font-bold">EXCEDIDO</span>
                   </div>
                 }
+                @if (exceededBudgetsRestantes() > 0) {
+                  <a routerLink="/presupuestos" (click)="closeLoginAlertModal()" class="block text-center text-[11px] font-semibold text-red-300 hover:text-red-200 py-1.5 cursor-pointer">
+                    +{{ exceededBudgetsRestantes() }} más → ver todos
+                  </a>
+                }
               </div>
             }
 
             <!-- Notificaciones críticas -->
             @if (criticalNotifications().length > 0) {
               <div class="space-y-2">
-                <p class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Notificaciones Críticas:</p>
-                @for (n of criticalNotifications(); track n.id) {
+                <p class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Notificaciones Críticas ({{ criticalNotifications().length }}):</p>
+                @for (n of criticalNotificationsPreview(); track n.id) {
                   <div class="p-3 rounded-xl bg-slate-950/70 border border-amber-500/30">
                     <p class="text-xs font-bold text-amber-300 flex items-center gap-1">
                       <span>🛑</span> {{ n.title }}
                     </p>
                     <p class="text-[11px] text-slate-300 mt-0.5">{{ n.body }}</p>
                   </div>
+                }
+                @if (criticalNotificationsRestantes() > 0) {
+                  <a routerLink="/notificaciones" (click)="closeLoginAlertModal()" class="block text-center text-[11px] font-semibold text-amber-300 hover:text-amber-200 py-1.5 cursor-pointer">
+                    +{{ criticalNotificationsRestantes() }} más → ver todas
+                  </a>
                 }
               </div>
             }
@@ -471,229 +488,6 @@
   @if (toastMessage()) {
     <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-slate-900/90 border border-cyan-500/40 text-cyan-200 text-xs font-semibold shadow-[0_0_30px_rgba(6,182,212,0.3)] backdrop-blur-xl animate-bounce">
       <span>{{ toastMessage() }}</span>
-    </div>
-  }
-
-  <!-- MODAL 1: TRANSFERIR (BANCOS ECUADOR 🇪🇨) -->
-  @if (showTransferModal()) {
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
-      <div class="relative w-full max-w-md rounded-3xl bg-slate-900/90 border border-cyan-500/30 p-6 shadow-[0_0_40px_rgba(6,182,212,0.25)] text-white">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold">🏦</div>
-            <div>
-              <h3 class="text-base font-bold text-white flex items-center gap-1.5">
-                Transferencia SPI Ecuador 🇪🇨
-              </h3>
-              <p class="text-[11px] text-slate-400">Transferencias interbancarias directas SPI</p>
-            </div>
-          </div>
-          <button (click)="showTransferModal.set(false)" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">✕</button>
-        </div>
-
-        <div class="flex flex-col gap-3">
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Banco / Cooperativa de Ecuador</label>
-            <select [value]="transferBank()" (change)="transferBank.set($any($event.target).value)"
-              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white focus:border-cyan-400 outline-none transition-all">
-              <option value="Banco Pichincha">🏦 Banco Pichincha</option>
-              <option value="Banco Guayaquil">🏦 Banco Guayaquil</option>
-              <option value="Banco del Pacífico">🏦 Banco del Pacífico</option>
-              <option value="Produbanco">🏦 Produbanco / Promerica</option>
-              <option value="Banco Internacional">🏦 Banco Internacional</option>
-              <option value="Banco Bolivariano">🏦 Banco Bolivariano</option>
-              <option value="Cooperativa JEP">🏦 Cooperativa JEP</option>
-              <option value="Cooperativa Policia Nacional">🏦 Coop. Policía Nacional</option>
-              <option value="Cooperativa Andalucía">🏦 Cooperativa Andalucía</option>
-            </select>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Tipo de Cuenta</label>
-              <select [value]="transferAccountType()" (change)="transferAccountType.set($any($event.target).value)"
-                class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-3 py-2 text-xs text-white focus:border-cyan-400 outline-none">
-                <option value="Cuenta Ahorros">Ahorros</option>
-                <option value="Cuenta Corriente">Corriente</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Cédula / RUC Titular</label>
-              <input type="text" [value]="transferIdNum()" (input)="transferIdNum.set($any($event.target).value)" placeholder="1712345678"
-                class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-cyan-400 outline-none"/>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Beneficiario / Nombre Titular</label>
-            <input type="text" [value]="transferRecipient()" (input)="transferRecipient.set($any($event.target).value)" placeholder="Ej. Juan Carlos Andrade o Empresa S.A."
-              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-cyan-400 outline-none transition-all"/>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Monto ($ USD Ecuador)</label>
-            <input type="number" [value]="transferAmount()" (input)="transferAmount.set($any($event.target).value ? +$any($event.target).value : null)" placeholder="0.00"
-              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-cyan-400 outline-none transition-all"/>
-          </div>
-
-          <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-            <span>Red Bancaria:</span>
-            <span class="font-bold text-cyan-400">Sistema SPI BCE Ecuador 🇪🇨</span>
-          </div>
-
-          @if (transferSummary()) {
-            <div class="flex items-start gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/30 px-3 py-2.5 text-[11px] text-cyan-200 leading-relaxed animate-fade-in">
-              <span class="text-sm flex-shrink-0">🧭</span>
-              <span>{{ transferSummary() }}</span>
-            </div>
-          }
-
-          <div class="flex items-center gap-3 pt-2">
-            <button (click)="showTransferModal.set(false)" class="flex-1 py-2 rounded-xl border border-white/10 text-xs font-medium text-slate-300 hover:bg-white/5 transition-all">Cancelar</button>
-            <button (click)="executeTransfer()" [disabled]="isSubmittingAction()" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-xs font-bold text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{{ isSubmittingAction() ? 'Enviando...' : 'Transferir SPI 🚀' }}</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
-
-  <!-- MODAL 2: FACTURAR (SRI ECUADOR 🇪🇨) -->
-  @if (showBillModal()) {
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
-      <div class="relative w-full max-w-md rounded-3xl bg-slate-900/90 border border-purple-500/30 p-6 shadow-[0_0_40px_rgba(168,85,247,0.25)] text-white">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 font-bold">🧾</div>
-            <div>
-              <h3 class="text-base font-bold text-white flex items-center gap-1.5">
-                Facturación Electrónica SRI 🇪🇨
-              </h3>
-              <p class="text-[11px] text-slate-400">Emisión directa y firma con la normativa del SRI</p>
-            </div>
-          </div>
-          <button (click)="showBillModal.set(false)" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">✕</button>
-        </div>
-
-        <div class="flex flex-col gap-3">
-          <!-- Botones rápidos de clientes Ecuador -->
-          <div>
-            <label class="block text-[11px] font-medium text-slate-400 mb-1.5">Clientes / RUCs Frecuentes Ecuador:</label>
-            <div class="flex flex-wrap gap-1.5">
-              <button type="button" (click)="selectEcuadorClient({ name: 'Corporación Favorita C.A.', ruc: '1790016919001' })"
-                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-purple-500/20 border border-white/10 text-[10px] text-slate-300 cursor-pointer transition-all">🏢 Favorita</button>
-              <button type="button" (click)="selectEcuadorClient({ name: 'Tiendas TIA S.A.', ruc: '0990011700001' })"
-                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-purple-500/20 border border-white/10 text-[10px] text-slate-300 cursor-pointer transition-all">🏢 TIA S.A.</button>
-              <button type="button" (click)="selectEcuadorClient({ name: 'Pronaca S.A.', ruc: '179004123001' })"
-                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-purple-500/20 border border-white/10 text-[10px] text-slate-300 cursor-pointer transition-all">🏢 Pronaca</button>
-              <button type="button" (click)="selectEcuadorClient({ name: 'Consumidor Final', ruc: '9999999999999' })"
-                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-purple-500/20 border border-white/10 text-[10px] text-slate-300 cursor-pointer transition-all">👤 Consumidor Final</button>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Razon Social / Nombre Cliente</label>
-            <input type="text" [value]="billClient()" (input)="billClient.set($any($event.target).value)" placeholder="Nombre del cliente o empresa ecuatoriana"
-              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-purple-400 outline-none transition-all"/>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">RUC o Cédula Ecuador (13 ó 10 dígitos)</label>
-            <input type="text" [value]="billRuc()" (input)="billRuc.set($any($event.target).value)" placeholder="1790016919001"
-              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-purple-400 outline-none transition-all"/>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Monto Total ($ USD Ecuador)</label>
-            <input type="number" [value]="billAmount()" (input)="billAmount.set($any($event.target).value ? +$any($event.target).value : null)" placeholder="0.00"
-              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-purple-400 outline-none transition-all"/>
-          </div>
-
-          <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-            <span>Esquema Fiscal SRI:</span>
-            <span class="font-bold text-purple-400">15% IVA Ecuador (Ley SRI 2026)</span>
-          </div>
-
-          @if (billSummary()) {
-            <div class="flex items-start gap-2 rounded-xl border border-purple-500/30 bg-purple-950/30 px-3 py-2.5 text-[11px] text-purple-200 leading-relaxed animate-fade-in">
-              <span class="text-sm flex-shrink-0">🧭</span>
-              <span>{{ billSummary() }}</span>
-            </div>
-          }
-
-          <div class="flex items-center gap-3 pt-2">
-            <button (click)="showBillModal.set(false)" class="flex-1 py-2 rounded-xl border border-white/10 text-xs font-medium text-slate-300 hover:bg-white/5 transition-all">Cancelar</button>
-            <button (click)="executeBilling()" [disabled]="isSubmittingAction()" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-xs font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{{ isSubmittingAction() ? 'Enviando...' : 'Autorizar SRI 🇪🇨' }}</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
-
-  <!-- MODAL 3: PAGAR (SERVICIOS Y BANCOS ECUADOR 🇪🇨) -->
-  @if (showPayServiceModal()) {
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
-      <div class="relative w-full max-w-md rounded-3xl bg-slate-900/90 border border-emerald-500/30 p-6 shadow-[0_0_40px_rgba(16,185,129,0.25)] text-white">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold">⚡</div>
-            <div>
-              <h3 class="text-base font-bold text-white flex items-center gap-1.5">
-                Pago de Servicios Ecuador 🇪🇨
-              </h3>
-              <p class="text-[11px] text-slate-400">Luz, agua, internet, IESS o tarjetas de Ecuador</p>
-            </div>
-          </div>
-          <button (click)="showPayServiceModal.set(false)" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">✕</button>
-        </div>
-
-        <div class="flex flex-col gap-3">
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Empresa / Entidad de Ecuador</label>
-            <select [value]="payEcuadorService()" (change)="payEcuadorService.set($any($event.target).value)"
-              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white focus:border-emerald-400 outline-none transition-all">
-              <option value="⚡ EEQ - Empresa Eléctrica Quito">⚡ EEQ - Empresa Eléctrica Quito</option>
-              <option value="⚡ CNEL EP - Empresa Eléctrica Ecuador">⚡ CNEL EP - Energía Eléctrica Ecuador</option>
-              <option value="💧 EPMAPS - Agua Potable Quito">💧 EPMAPS - Agua Potable Quito</option>
-              <option value="💧 Interagua - Agua Potable Guayaquil">💧 Interagua - Agua Potable Guayaquil</option>
-              <option value="📶 CNT EP - Telecomunicaciones Ecuador">📶 CNT EP - Internet / Telefonía</option>
-              <option value="📱 Claro Ecuador (CONECEL)">📱 Claro Ecuador (Plan Postpago)</option>
-              <option value="📱 Movistar Ecuador (OTECEL)">📱 Movistar Ecuador (Plan Postpago)</option>
-              <option value="🏛️ IESS - Planillaje Patronal & Aportes">🏛️ IESS - Planillaje & Aportes</option>
-              <option value="🏛️ SRI - Impuesto Vehicular / Renta">🏛️ SRI - Matriculación / Impuestos</option>
-              <option value="💳 Tarjeta Banco Pichincha / Guayaquil">💳 Tarjeta de Crédito Banco Ecuador</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">N° Contrato / Cuenta / Referencia</label>
-            <input type="text" [value]="payContractRef()" (input)="payContractRef.set($any($event.target).value)" placeholder="Ej. 1000847291"
-              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-emerald-400 outline-none transition-all"/>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Monto a Pagar ($ USD)</label>
-            <input type="number" [value]="payAmount()" (input)="payAmount.set($any($event.target).value ? +$any($event.target).value : null)" placeholder="0.00"
-              class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:border-emerald-400 outline-none transition-all"/>
-          </div>
-
-          <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-            <span>Comisión Convenio:</span>
-            <span class="font-bold text-emerald-400">$0.00 USD (Convenio Directo ECU)</span>
-          </div>
-
-          @if (paySummary()) {
-            <div class="flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-3 py-2.5 text-[11px] text-emerald-200 leading-relaxed animate-fade-in">
-              <span class="text-sm flex-shrink-0">🧭</span>
-              <span>{{ paySummary() }}</span>
-            </div>
-          }
-
-          <div class="flex items-center gap-3 pt-2">
-            <button (click)="showPayServiceModal.set(false)" class="flex-1 py-2 rounded-xl border border-white/10 text-xs font-medium text-slate-300 hover:bg-white/5 transition-all">Cancelar</button>
-            <button (click)="executePayService()" [disabled]="isSubmittingAction()" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-xs font-bold text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{{ isSubmittingAction() ? 'Enviando...' : 'Pagar Servicio 💳' }}</button>
-          </div>
-        </div>
-      </div>
     </div>
   }
 

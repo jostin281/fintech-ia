@@ -23,10 +23,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar CSV
       </button>
-      <a class="btn-secondary" routerLink="/facturacion-electronica" [queryParams]="{ tab: 'comprobantes-recibidos' }">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Importar XML del SRI
-      </a>
       <button class="btn-create" (click)="openCreateModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nuevo Movimiento
@@ -45,7 +41,7 @@
         </div>
         <div>
           <p class="kpi-label">Ingresos Totales</p>
-          <p class="kpi-value text-emerald-400">+${{ totalIncome() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+          <p class="kpi-value text-emerald-400">+${{ totalIncome() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
         </div>
       </div>
 
@@ -55,7 +51,7 @@
         </div>
         <div>
           <p class="kpi-label">Egresos Totales</p>
-          <p class="kpi-value text-slate-200">-${{ totalExpense() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+          <p class="kpi-value text-slate-200">-${{ totalExpense() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
         </div>
       </div>
 
@@ -65,7 +61,7 @@
         </div>
         <div>
           <p class="kpi-label">Flujo Neto Disponible</p>
-          <p class="kpi-value text-cyan-400">${{ netFlow() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+          <p class="kpi-value text-cyan-400">${{ netFlow() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
         </div>
       </div>
     </div>
@@ -119,7 +115,7 @@
                 <p class="m-amount" [class.positive]="m.type === 'ingreso'" [class.negative]="m.type === 'egreso'">
                   {{ m.type === 'ingreso' ? '+' : '-' }}${{ m.amount | number:'1.2-2' }}
                 </p>
-                <span class="m-curr">MXN</span>
+                <span class="m-curr">USD</span>
               </div>
 
               <button class="btn-delete-row" (click)="deleteMovement(m.id)" title="Eliminar movimiento">

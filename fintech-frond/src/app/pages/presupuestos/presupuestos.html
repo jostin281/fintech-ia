@@ -37,7 +37,7 @@
         </div>
         <div>
           <p class="kpi-label">Presupuesto Asignado</p>
-          <p class="kpi-value">${{ totalLimit() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+          <p class="kpi-value">${{ totalLimit() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
         </div>
       </div>
 
@@ -47,7 +47,7 @@
         </div>
         <div>
           <p class="kpi-label">Gastado Hasta la Fecha</p>
-          <p class="kpi-value">${{ totalSpent() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+          <p class="kpi-value">${{ totalSpent() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
         </div>
       </div>
 
@@ -57,7 +57,7 @@
         </div>
         <div>
           <p class="kpi-label">Disponible Restante</p>
-          <p class="kpi-value">${{ totalRemaining() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+          <p class="kpi-value">${{ totalRemaining() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
         </div>
       </div>
     </div>
@@ -80,6 +80,38 @@
       </div>
     </div>
 
+    <!-- GASTOS DE ESTE MES EN CATEGORÍAS SIN PRESUPUESTO -->
+    <!-- Un movimiento (por ejemplo, uno categorizado al importar un XML del
+         SRI) no crea presupuesto solo: si su categoría no tiene uno creado
+         este mes, esa plata no aparece en ninguna tarjeta de abajo. Esta
+         sección la muestra aparte para que no quede invisible. -->
+    @if (gastosSinPresupuesto().length > 0) {
+      <div class="unbudgeted-alert">
+        <div class="unbudgeted-alert-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div>
+            <p class="unbudgeted-title">Gastos de este mes sin presupuesto</p>
+            <p class="unbudgeted-desc">Tuvieron movimientos este mes pero no tienen un presupuesto creado, así que no cuentan en ninguna tarjeta de abajo. El límite de cada uno se sugiere igual a lo ya gastado; edítalo después si quieres otro monto.</p>
+          </div>
+        </div>
+        <div class="unbudgeted-list">
+          @for (g of gastosSinPresupuesto(); track g.categoriaId) {
+            <div class="unbudgeted-item">
+              <span class="unbudgeted-cat">{{ g.nombre }}</span>
+              <span class="unbudgeted-monto">${{ g.monto | number:'1.2-2' }}</span>
+            </div>
+          }
+        </div>
+        <button
+          class="btn-unbudgeted-crear-todos"
+          [disabled]="creandoTodosSinAsignar()"
+          (click)="crearTodosLosPresupuestosSinAsignar()"
+        >
+          {{ creandoTodosSinAsignar() ? 'Creando…' : 'Crear ' + gastosSinPresupuesto().length + ' presupuesto' + (gastosSinPresupuesto().length === 1 ? '' : 's') + ' automáticamente' }}
+        </button>
+      </div>
+    }
+
     <!-- GRID DE PRESUPUESTOS POR CATEGORÍA -->
     <div class="budgets-grid">
       @for (b of filteredBudgets(); track b.id) {
@@ -90,7 +122,7 @@
               <span class="budget-icon" [style.background-color]="b.color + '25'">{{ b.icon }}</span>
               <div>
                 <h3 class="budget-category">{{ b.category }}</h3>
-                <p class="budget-sub">Límite mensual: ${{ b.limit | number:'1.0-0' }} MXN</p>
+                <p class="budget-sub">Límite mensual: ${{ b.limit | number:'1.0-0' }} USD</p>
               </div>
             </div>
 
@@ -128,6 +160,10 @@
             <button class="btn-action-add" (click)="openExpenseModal(b.id)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               + Registrar Gasto
+            </button>
+
+            <button class="btn-action-edit" (click)="openEditModal(b)" title="Editar límite">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
 
             <button class="btn-action-delete" (click)="deleteBudget(b.id)" title="Eliminar presupuesto">
@@ -195,7 +231,7 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Monto ($ MXN)</label>
+            <label class="form-label">Monto ($ USD)</label>
             <input type="number" class="form-input" placeholder="450" 
               [value]="expenseAmount() ?? ''" (input)="expenseAmount.set($any($event.target).valueAsNumber)" />
           </div>
@@ -204,6 +240,31 @@
         <div class="modal-footer">
           <button class="btn-cancel" (click)="closeExpenseModal()">Cancelar</button>
           <button class="btn-save" (click)="addExpense()">Confirmar Gasto</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: EDITAR LÍMITE DE UN PRESUPUESTO -->
+  @if (showEditModal()) {
+    <div class="modal-backdrop" (click)="closeEditModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Editar Límite · {{ editBudgetCategoria() }}</h3>
+          <button class="btn-close" (click)="closeEditModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nuevo Límite Mensual ($ USD)</label>
+            <input type="number" class="form-input" placeholder="500"
+              [value]="editLimit() ?? ''" (input)="editLimit.set($any($event.target).valueAsNumber)" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeEditModal()">Cancelar</button>
+          <button class="btn-save" [disabled]="savingEdit()" (click)="guardarEdicionLimite()">{{ savingEdit() ? 'Guardando...' : 'Guardar Cambios' }}</button>
         </div>
       </div>
     </div>

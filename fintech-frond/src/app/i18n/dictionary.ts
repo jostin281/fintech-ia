@@ -265,7 +265,7 @@ export const ES_EN_DICTIONARY: Record<string, string> = {
   '💰 Ingreso / Cobro': '💰 Income',
   'Concepto / Descripción': 'Concept / Description',
   'Ej. Compra de insumos o Pago cliente': 'E.g. Supply purchase or Customer payment',
-  'Monto ($ MXN)': 'Amount ($ MXN)',
+  'Monto ($ USD)': 'Amount ($ USD)',
   'Tarjeta Débito': 'Debit Card',
   'Tarjeta Crédito': 'Credit Card',
   'Método de Pago': 'Payment Method',
@@ -296,7 +296,7 @@ export const ES_EN_DICTIONARY: Record<string, string> = {
   '+ Registrar Gasto': '+ Record Expense',
   'Nombre de Categoría': 'Category Name',
   'Ej. Suscripciones o Entretenimiento': 'E.g. Subscriptions or Entertainment',
-  'Límite Mensual ($ MXN)': 'Monthly Limit ($ MXN)',
+  'Límite Mensual ($ USD)': 'Monthly Limit ($ USD)',
   'Ícono Emoji': 'Emoji Icon',
   'Color Distintivo': 'Distinctive Color',
   'Guardar Presupuesto': 'Save Budget',
@@ -325,13 +325,13 @@ export const ES_EN_DICTIONARY: Record<string, string> = {
   'Nueva Meta de Ahorro': 'New Savings Goal',
   'Nombre del Objetivo': 'Goal Name',
   'Ej. Fondo de Reserva o Viaje': 'E.g. Emergency Fund or Trip',
-  'Monto Objetivo ($ MXN)': 'Target Amount ($ MXN)',
-  'Aporte Inicial ($ MXN)': 'Initial Contribution ($ MXN)',
+  'Monto Objetivo ($ USD)': 'Target Amount ($ USD)',
+  'Aporte Inicial ($ USD)': 'Initial Contribution ($ USD)',
   'Fecha Límite Estimada': 'Estimated Deadline',
   'Ej. Diciembre 2026': 'E.g. December 2026',
   'Crear Meta': 'Create Goal',
   'Abonar a tu Meta': 'Deposit to Your Goal',
-  'Monto a Abonar ($ MXN)': 'Deposit Amount ($ MXN)',
+  'Monto a Abonar ($ USD)': 'Deposit Amount ($ USD)',
   'Confirmar Abono': 'Confirm Deposit',
   'Eliminar meta': 'Delete goal',
   'Aporte mensual sugerido:': 'Suggested monthly contribution:',
@@ -679,9 +679,7 @@ export const ES_EN_DICTIONARY: Record<string, string> = {
   'Interfaz oscura (siempre activa en esta versión).': 'Dark interface (always on in this version).',
   'Moneda principal': 'Primary currency',
   'Moneda usada en todos los reportes y gráficas.': 'Currency used across all reports and charts.',
-  'MXN — Peso Mexicano': 'MXN — Mexican Peso',
-  'USD — Dólar': 'USD — Dollar',
-  'EUR — Euro': 'EUR — Euro',
+  'USD — Dólar (Ecuador 🇪🇨)': 'USD — Dollar (Ecuador 🇪🇨)',
   'Guardar preferencias': 'Save preferences',
   'Inicio de sesión desde Chrome / Windows': 'Signed in from Chrome / Windows',
   'Presupuesto "Alimentación" actualizado': 'Budget "Food" updated',
@@ -730,14 +728,14 @@ export const ES_EN_DICTIONARY: Record<string, string> = {
 
 /**
  * Patrones para nodos de texto que combinan español estático con valores
- * interpolados en medio (p. ej. "Faltan $1,234 MXN para el 100%"). El
+ * interpolados en medio (p. ej. "Faltan $1,234 USD para el 100%"). El
  * diccionario exacto de arriba no puede cubrir estos casos porque el número
  * varía en cada render, así que se resuelven con una lista pequeña y
  * explícita de expresiones regulares en vez de una búsqueda de substrings
  * sobre todo el diccionario (evita falsos positivos).
  */
 export const ES_EN_PATTERNS: Array<{ regex: RegExp; replace: (m: RegExpMatchArray) => string }> = [
-  { regex: /^Faltan \$(.+) MXN para el 100%$/, replace: (m) => `Remaining $${m[1]} MXN to 100%` },
+  { regex: /^Faltan \$(.+) USD para el 100%$/, replace: (m) => `Remaining $${m[1]} USD to 100%` },
   { regex: /^Faltan \$(.+)$/, replace: (m) => `Remaining $${m[1]}` },
   { regex: /^(\d+)% completado$/, replace: (m) => `${m[1]}% completed` },
   { regex: /^de (\d+) metas$/, replace: (m) => `of ${m[1]} goals` },

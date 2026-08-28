@@ -60,14 +60,77 @@ export class Dashboard implements AfterViewInit, OnDestroy {
 
   readonly showTipWidget = signal(true);
 
-  // Currency selection
-  readonly selectedCurrency = signal<'MXN' | 'USD' | 'EUR'>('USD');
-
   // Balances dinámicos por usuario
   readonly totalBalance = this.userData.totalBalance;
   readonly monthlyIncome = this.userData.monthlyIncome;
   readonly monthlyExpenses = this.userData.monthlyExpenses;
   readonly savingsRate = this.userData.savingsRate;
+  /** Variación real del flujo neto de este mes vs. el anterior; null si no hay mes anterior con qué comparar. */
+  readonly balanceChangePercent = this.userData.balanceChangePercent;
+
+  /**
+   * Serie diaria (últimos 30 días) del balance acumulado dentro de esa
+   * ventana, calculada a partir de los movimientos reales del usuario.
+   * Se acumula desde 0 al inicio de la ventana (no desde el balance total)
+   * para que la forma de la curva sea legible sin importar cuán grande o
+   * negativo sea el balance histórico.
+   */
+  private readonly serieTendenciaBalance = computed<number[]>(() => {
+    const dias = 30;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const inicio = new Date(hoy);
+    inicio.setDate(inicio.getDate() - (dias - 1));
+
+    const netoPorDia = new Array<number>(dias).fill(0);
+    for (const t of this.userData.transactions()) {
+      const fecha = new Date(t.fechaIso);
+      if (Number.isNaN(fecha.getTime())) continue;
+      fecha.setHours(0, 0, 0, 0);
+      const indice = Math.round((fecha.getTime() - inicio.getTime()) / 86_400_000);
+      if (indice < 0 || indice >= dias) continue;
+      netoPorDia[indice] += t.amount;
+    }
+
+    const acumulado: number[] = [];
+    let corrido = 0;
+    for (const neto of netoPorDia) {
+      corrido += neto;
+      acumulado.push(corrido);
+    }
+    return acumulado;
+  });
+
+  /** Línea, relleno y punto final del gráfico de tendencia, ya en coordenadas del viewBox (300x60). */
+  readonly balanceTrend = computed(() => {
+    const ancho = 300;
+    const alto = 60;
+    const margenY = 5;
+    const serie = this.serieTendenciaBalance();
+
+    const minimo = Math.min(...serie);
+    const maximo = Math.max(...serie);
+    const rango = maximo - minimo;
+
+    const puntos = serie.map((valor, indice) => {
+      const x = serie.length > 1 ? (indice / (serie.length - 1)) * ancho : 0;
+      const y =
+        rango === 0
+          ? alto / 2
+          : alto - margenY - ((valor - minimo) / rango) * (alto - margenY * 2);
+      return { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 };
+    });
+
+    const linea = construirPathSuave(puntos);
+    const ultimo = puntos[puntos.length - 1] ?? { x: ancho, y: alto / 2 };
+    const primero = puntos[0] ?? { x: 0, y: alto / 2 };
+
+    return {
+      linea,
+      area: `${linea} L${ultimo.x},${alto} L${primero.x},${alto} Z`,
+      puntoFinal: ultimo,
+    };
+  });
 
   // Filter for transactions
   readonly txFilter = signal<'todos' | 'ingreso' | 'egreso'>('todos');
@@ -90,6 +153,28 @@ export class Dashboard implements AfterViewInit, OnDestroy {
 
   readonly hasRedAlerts = computed(
     () => this.exceededBudgets().length > 0 || this.criticalNotifications().length > 0
+  );
+
+  /**
+   * El modal de alerta al iniciar sesión es para un vistazo rápido, no
+   * para reemplazar las pantallas de Presupuestos/Notificaciones: si hay
+   * muchas alertas, se corta la lista y se muestra "+N más" en vez de
+   * volverse una lista gigante que hay que scrollear.
+   */
+  private static readonly MAX_ALERTAS_EN_MODAL = 3;
+
+  readonly exceededBudgetsPreview = computed(() =>
+    this.exceededBudgets().slice(0, Dashboard.MAX_ALERTAS_EN_MODAL)
+  );
+  readonly exceededBudgetsRestantes = computed(() =>
+    Math.max(0, this.exceededBudgets().length - Dashboard.MAX_ALERTAS_EN_MODAL)
+  );
+
+  readonly criticalNotificationsPreview = computed(() =>
+    this.criticalNotifications().slice(0, Dashboard.MAX_ALERTAS_EN_MODAL)
+  );
+  readonly criticalNotificationsRestantes = computed(() =>
+    Math.max(0, this.criticalNotifications().length - Dashboard.MAX_ALERTAS_EN_MODAL)
   );
 
   constructor() {
@@ -121,10 +206,6 @@ export class Dashboard implements AfterViewInit, OnDestroy {
     if (this.resizeHandler) window.removeEventListener('resize', this.resizeHandler);
   }
 
-  setCurrency(curr: 'MXN' | 'USD' | 'EUR') {
-    this.selectedCurrency.set(curr);
-  }
-
   setTxFilter(f: 'todos' | 'ingreso' | 'egreso') {
     this.txFilter.set(f);
   }
@@ -135,35 +216,14 @@ export class Dashboard implements AfterViewInit, OnDestroy {
     return this.recentTransactions().filter(t => t.type === filter);
   }
 
-  // Modales de Acciones Rápidas (Ecuador 🇪🇨)
-  readonly showTransferModal = signal(false);
-  readonly showBillModal = signal(false);
-  readonly showPayServiceModal = signal(false);
+  // Modal de Acciones Rápidas (Ecuador 🇪🇨) — solo queda Nueva Meta como modal local,
+  // porque es la única acción rápida 100% real (POST /api/metas-ahorro). Transferir/
+  // Facturar/Pagar se quitaron de aquí: no había forma honesta de ejecutarlas desde un
+  // modal rápido (ver services/banking.ts), así que ahora son enlaces reales a las
+  // pantallas donde sí se pueden completar de verdad (Movimientos / Facturación Electrónica).
   readonly showGoalModal = signal(false);
   readonly toastMessage = signal<string | null>(null);
-  // Se activa mientras BankingService "llama" a cada acción (hoy: mock local con
-  // latencia simulada; el día que exista backend, este mismo flag refleja la
-  // llamada HTTP real sin tener que tocar nada más en esta pantalla).
   readonly isSubmittingAction = signal(false);
-
-  // Form Transferir Ecuador 🇪🇨
-  readonly transferBank = signal('Banco Pichincha');
-  readonly transferAccountType = signal('Cuenta Ahorros');
-  readonly transferIdNum = signal('');
-  readonly transferRecipient = signal('');
-  readonly transferAmount = signal<number | null>(null);
-
-  // Form Facturar SRI Ecuador 🇪🇨
-  readonly billDocType = signal<'01' | '07' | '04'>('01');
-  readonly billClientType = signal<'RUC' | 'Cédula' | 'Consumidor Final'>('RUC');
-  readonly billClient = signal('');
-  readonly billRuc = signal('1790016919001');
-  readonly billAmount = signal<number | null>(null);
-
-  // Form Pagar Servicio Ecuador 🇪🇨
-  readonly payEcuadorService = signal('⚡ EEQ - Empresa Eléctrica Quito');
-  readonly payContractRef = signal('');
-  readonly payAmount = signal<number | null>(null);
 
   // Form Nueva Meta Ecuador 🇪🇨
   readonly goalCategoryEcuador = signal('🏠 Entrada Vivienda (Biess/Banco)');
@@ -171,35 +231,7 @@ export class Dashboard implements AfterViewInit, OnDestroy {
   readonly goalTarget = signal<number | null>(null);
   readonly goalInitial = signal<number | null>(null);
 
-  // Pre-seleccionadores Ecuador
-  selectEcuadorClient(preset: { name: string; ruc: string }) {
-    this.billClient.set(preset.name);
-    this.billRuc.set(preset.ruc);
-  }
-
-  // Resúmenes en vivo: para que siempre se vea "a dónde va" cada acción antes de confirmar.
-  readonly transferSummary = computed(() => {
-    const amount = this.transferAmount();
-    if (!amount || amount <= 0) return null;
-    const recipient = this.transferRecipient().trim() || 'un beneficiario';
-    return `Vas a transferir $${amount.toLocaleString()} USD a ${recipient} · ${this.transferBank()} (${this.transferAccountType()})`;
-  });
-
-  readonly billSummary = computed(() => {
-    const amount = this.billAmount();
-    if (!amount || amount <= 0) return null;
-    const client = this.billClient().trim() || 'Consumidor Final';
-    const ruc = this.billRuc().trim() || '9999999999999';
-    return `Vas a facturar $${amount.toLocaleString()} USD a ${client} · RUC ${ruc}`;
-  });
-
-  readonly paySummary = computed(() => {
-    const amount = this.payAmount();
-    if (!amount || amount <= 0) return null;
-    const ref = this.payContractRef().trim();
-    return `Vas a pagar $${amount.toLocaleString()} USD a ${this.payEcuadorService()}${ref ? ' · Ref ' + ref : ''}`;
-  });
-
+  // Resumen en vivo: para que siempre se vea "a dónde va" la acción antes de confirmar.
   readonly goalSummary = computed(() => {
     const target = this.goalTarget();
     if (!target || target <= 0) return null;
@@ -210,76 +242,6 @@ export class Dashboard implements AfterViewInit, OnDestroy {
   });
 
   // Acciones Rápidas
-  openTransferModal() {
-    this.transferRecipient.set('');
-    this.transferIdNum.set('');
-    this.transferAmount.set(null);
-    this.showTransferModal.set(true);
-  }
-
-  async executeTransfer() {
-    const amount = Number(this.transferAmount());
-    if (!amount || amount <= 0 || this.isSubmittingAction()) return;
-
-    this.isSubmittingAction.set(true);
-    const result = await this.banking.transfer({
-      bank: this.transferBank(),
-      accountType: this.transferAccountType(),
-      recipientIdNumber: this.transferIdNum().trim(),
-      recipientName: this.transferRecipient().trim() || 'Beneficiario Ecuador',
-      amountUsd: amount,
-    });
-    this.isSubmittingAction.set(false);
-
-    this.triggerToast(result.message);
-    if (result.success) this.showTransferModal.set(false);
-  }
-
-  openBillModal() {
-    this.billClient.set('');
-    this.billRuc.set('1790016919001');
-    this.billAmount.set(null);
-    this.showBillModal.set(true);
-  }
-
-  async executeBilling() {
-    const amount = Number(this.billAmount());
-    if (!amount || amount <= 0 || this.isSubmittingAction()) return;
-
-    this.isSubmittingAction.set(true);
-    const result = await this.banking.issueInvoice({
-      clientName: this.billClient().trim(),
-      clientRuc: this.billRuc().trim(),
-      amountUsd: amount,
-    });
-    this.isSubmittingAction.set(false);
-
-    this.triggerToast(result.message);
-    if (result.success) this.showBillModal.set(false);
-  }
-
-  openPayServiceModal() {
-    this.payContractRef.set('');
-    this.payAmount.set(null);
-    this.showPayServiceModal.set(true);
-  }
-
-  async executePayService() {
-    const amount = Number(this.payAmount());
-    if (!amount || amount <= 0 || this.isSubmittingAction()) return;
-
-    this.isSubmittingAction.set(true);
-    const result = await this.banking.payService({
-      entity: this.payEcuadorService(),
-      contractRef: this.payContractRef().trim(),
-      amountUsd: amount,
-    });
-    this.isSubmittingAction.set(false);
-
-    this.triggerToast(result.message);
-    if (result.success) this.showPayServiceModal.set(false);
-  }
-
   openGoalModal() {
     this.goalName.set('');
     this.goalTarget.set(null);
@@ -304,6 +266,7 @@ export class Dashboard implements AfterViewInit, OnDestroy {
     if (result.success) this.showGoalModal.set(false);
   }
 
+
   private triggerToast(msg: string) {
     this.toastMessage.set(msg);
     setTimeout(() => {
@@ -323,4 +286,27 @@ export class Dashboard implements AfterViewInit, OnDestroy {
   private initNeuralCanvas(): void {
     // Fondo estático y limpio desactivado para evitar distracciones visuales
   }
+}
+
+/**
+ * Traza una curva suave que pasa por cada punto real (Q usa el punto real
+ * como control y el punto medio con el siguiente como destino, y T repite
+ * el control reflejado): mismo truco visual que tenía la curva fija
+ * original, pero ahora dibujado a partir de datos reales.
+ */
+function construirPathSuave(puntos: { x: number; y: number }[]): string {
+  if (puntos.length === 0) return '';
+  if (puntos.length === 1) return `M${puntos[0].x},${puntos[0].y}`;
+
+  let d = `M${puntos[0].x},${puntos[0].y}`;
+  for (let i = 0; i < puntos.length - 1; i++) {
+    const actual = puntos[i];
+    const siguiente = puntos[i + 1];
+    const puntoMedioX = (actual.x + siguiente.x) / 2;
+    const puntoMedioY = (actual.y + siguiente.y) / 2;
+    d += ` Q${actual.x},${actual.y} ${puntoMedioX},${puntoMedioY}`;
+  }
+  const ultimo = puntos[puntos.length - 1];
+  d += ` T${ultimo.x},${ultimo.y}`;
+  return d;
 }

@@ -8,12 +8,23 @@ import { PresupuestosApiService, type PresupuestoApi } from './api/presupuestos.
 import { MetasAhorroApiService, type MetaAhorroApi } from './api/metas-ahorro.api';
 import { NotificacionesApiService, type NotificacionApi } from './api/notificaciones.api';
 
+/**
+ * Cada cuánto se refresca sola la app mientras hay sesión activa (sin que
+ * el usuario haga nada). Cubre el caso de que aparezcan movimientos
+ * nuevos por una vía que no pasó por esta pestaña del navegador — por
+ * ejemplo el script de automatizacion-sri corriendo en segundo plano, u
+ * otra pestaña/dispositivo con la misma cuenta.
+ */
+const INTERVALO_AUTOACTUALIZACION_MS = 30_000;
+
 /* ── Formas usadas por las pantallas (se conservan para no reescribir cada página) ── */
 
 export interface Transaction {
   id: string;
   concept: string;
   date: string;
+  /** Fecha real en ISO (sin formatear), para cálculos de periodo. */
+  fechaIso: string;
   amount: number;
   type: 'ingreso' | 'egreso';
   category: string;
@@ -84,6 +95,7 @@ export class UserDataService {
 
   private readonly _cargando = signal(false);
   readonly cargando = this._cargando.asReadonly();
+  private intervaloAutoActualizacion?: ReturnType<typeof setInterval>;
 
   private readonly _categorias = signal<CategoriaApi[]>([]);
   private readonly _movimientos = signal<MovimientoApi[]>([]);
@@ -120,6 +132,7 @@ export class UserDataService {
       id: String(m.id),
       concept: m.descripcion || m.categoria.nombre,
       date: formatearFechaHora(m.fecha),
+      fechaIso: m.fecha,
       amount: m.tipo === 'INGRESO' ? Number(m.monto) : -Number(m.monto),
       type: m.tipo === 'INGRESO' ? 'ingreso' : 'egreso',
       category: m.categoria.nombre,
@@ -166,17 +179,31 @@ export class UserDataService {
     })),
   );
 
-  readonly totalBalance = computed(() => this.monthlyIncome() - this.monthlyExpenses());
-  readonly monthlyIncome = computed(() =>
-    this.transactions()
-      .filter((t) => t.type === 'ingreso')
-      .reduce((acc, t) => acc + t.amount, 0),
+  /** Balance histórico real: suma de TODOS los movimientos, no solo del mes. */
+  readonly totalBalance = computed(() =>
+    this.transactions().reduce((acc, t) => acc + t.amount, 0),
   );
-  readonly monthlyExpenses = computed(() =>
-    this.transactions()
-      .filter((t) => t.type === 'egreso')
-      .reduce((acc, t) => acc + Math.abs(t.amount), 0),
+
+  readonly monthlyIncome = computed(() => this.sumaPorTipoYMes('ingreso', 0));
+  readonly monthlyExpenses = computed(() => this.sumaPorTipoYMes('egreso', 0));
+
+  private readonly netoMesAnterior = computed(
+    () => this.sumaPorTipoYMes('ingreso', 1) - this.sumaPorTipoYMes('egreso', 1),
   );
+
+  /**
+   * Variación real del flujo neto (ingresos - gastos) de este mes contra el
+   * mes anterior. null cuando no hay movimientos registrados el mes
+   * anterior: no hay una base real contra la cual comparar, así que no se
+   * inventa un porcentaje.
+   */
+  readonly balanceChangePercent = computed<number | null>(() => {
+    const anterior = this.netoMesAnterior();
+    if (anterior === 0) return null;
+    const actual = this.monthlyIncome() - this.monthlyExpenses();
+    return Math.round(((actual - anterior) / Math.abs(anterior)) * 1000) / 10;
+  });
+
   readonly savingsRate = computed(() => {
     const inc = this.monthlyIncome();
     const exp = this.monthlyExpenses();
@@ -184,19 +211,55 @@ export class UserDataService {
     return Math.max(0, Math.round(((inc - exp) / inc) * 1000) / 10);
   });
 
+  /** Suma movimientos de un tipo en un mes calendario (0 = actual, 1 = el anterior, ...). */
+  private sumaPorTipoYMes(tipo: 'ingreso' | 'egreso', mesesAtras: number): number {
+    return this.transactions()
+      .filter((t) => t.type === tipo && estaEnMesRelativo(t.fechaIso, mesesAtras))
+      .reduce((acc, t) => acc + Math.abs(t.amount), 0);
+  }
+
   readonly profile = this._profile.asReadonly();
 
   constructor() {
-    // Cuando cambia la sesión (login/logout) recarga o limpia los datos.
+    // Cuando cambia la sesión (login/logout) recarga o limpia los datos, y
+    // arranca/detiene la auto-actualización periódica en segundo plano.
     effect(() => {
       const user = this.auth.currentUser();
       if (user) {
         void this.cargarTodo();
         this.restaurarPerfilLocal(user);
+        this.iniciarAutoActualizacion();
       } else {
         this.limpiar();
+        this.detenerAutoActualizacion();
       }
     });
+
+    if (this.isBrowser) {
+      // Al volver a esta pestaña (otra vez visible) refresca de una vez,
+      // sin esperar al próximo tick del intervalo: es lo que se nota más
+      // cuando uno importó XML desde otra pestaña o corrió el script del
+      // SRI y vuelve a mirar la app.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && this.auth.currentUser()) {
+          void this.refrescarDatos();
+        }
+      });
+    }
+  }
+
+  private iniciarAutoActualizacion(): void {
+    if (!this.isBrowser || this.intervaloAutoActualizacion !== undefined) return;
+    this.intervaloAutoActualizacion = setInterval(() => {
+      void this.refrescarDatos();
+    }, INTERVALO_AUTOACTUALIZACION_MS);
+  }
+
+  private detenerAutoActualizacion(): void {
+    if (this.intervaloAutoActualizacion !== undefined) {
+      clearInterval(this.intervaloAutoActualizacion);
+      this.intervaloAutoActualizacion = undefined;
+    }
   }
 
   private restaurarPerfilLocal(user: AuthUser): void {
@@ -213,24 +276,35 @@ export class UserDataService {
   async cargarTodo(): Promise<void> {
     this._cargando.set(true);
     try {
-      const [categorias, movimientos, presupuestos, metas, notificaciones] = await Promise.all([
-        this.categoriasApi.listar().catch(() => []),
-        this.movimientosApi.listar().catch(() => []),
-        this.presupuestosApi.listar().catch(() => []),
-        this.metasApi.listar().catch(() => []),
-        this.notificacionesApi.sincronizar().catch(() => this.notificacionesApi.listar().catch(() => [])),
-      ]);
-      this._categorias.set(categorias);
-      this._movimientos.set(movimientos);
-      this._presupuestos.set(presupuestos);
-      this._metas.set(metas);
-      this._notificaciones.set(notificaciones);
+      await this.refrescarDatos();
     } finally {
       this._cargando.set(false);
     }
   }
 
+  /**
+   * Igual que cargarTodo(), pero sin tocar el signal "cargando": la usan la
+   * auto-actualización en segundo plano y el refresco al volver a la
+   * pestaña, donde no queremos parpadeos de "cargando" en la interfaz por
+   * un refresco que el usuario no pidió.
+   */
+  private async refrescarDatos(): Promise<void> {
+    const [categorias, movimientos, presupuestos, metas, notificaciones] = await Promise.all([
+      this.categoriasApi.listar().catch(() => this._categorias()),
+      this.movimientosApi.listar().catch(() => this._movimientos()),
+      this.presupuestosApi.listar().catch(() => this._presupuestos()),
+      this.metasApi.listar().catch(() => this._metas()),
+      this.notificacionesApi.sincronizar().catch(() => this.notificacionesApi.listar().catch(() => this._notificaciones())),
+    ]);
+    this._categorias.set(categorias);
+    this._movimientos.set(movimientos);
+    this._presupuestos.set(presupuestos);
+    this._metas.set(metas);
+    this._notificaciones.set(notificaciones);
+  }
+
   private limpiar(): void {
+    this.detenerAutoActualizacion();
     this._categorias.set([]);
     this._movimientos.set([]);
     this._presupuestos.set([]);
@@ -279,6 +353,12 @@ export class UserDataService {
   async deleteBudget(id: string): Promise<void> {
     await this.presupuestosApi.eliminar(Number(id));
     this._presupuestos.set(this._presupuestos().filter((p) => String(p.id) !== id));
+  }
+
+  /** Cambia manualmente el límite de un presupuesto ya creado. */
+  async updateBudgetLimit(id: string, nuevoLimite: number): Promise<void> {
+    await this.presupuestosApi.actualizar(Number(id), { montoLimite: nuevoLimite });
+    this._presupuestos.set(await this.presupuestosApi.listar());
   }
 
   private async refrescarPresupuestosYNotificaciones(): Promise<void> {
@@ -335,6 +415,21 @@ export class UserDataService {
       localStorage.setItem(`fintech_perfil_${email.toLowerCase()}`, JSON.stringify(actualizado));
     }
   }
+}
+
+/** true si `iso` cae en el mes calendario que está `mesesAtras` meses antes de hoy (0 = mes actual). */
+export function estaEnMesRelativo(iso: string, mesesAtras: number): boolean {
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return false;
+
+  const referencia = new Date();
+  referencia.setDate(1);
+  referencia.setMonth(referencia.getMonth() - mesesAtras);
+
+  return (
+    fecha.getFullYear() === referencia.getFullYear() &&
+    fecha.getMonth() === referencia.getMonth()
+  );
 }
 
 function formatearFechaHora(iso: string): string {

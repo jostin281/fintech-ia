@@ -20,6 +20,7 @@ import {
   FacturasApiService,
   RetencionesRecibidasApiService,
   type PerfilTributarioApi,
+  type GuardarPerfilTributarioResultadoApi,
   type FirmaElectronicaApi,
   type ClienteFacturacionApi,
   type ProductoServicioApi,
@@ -299,11 +300,16 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
         regimenTributario: f.regimenTributario,
         ambienteSri: f.ambienteSri,
       };
-      const perfil = this.perfil()
+      const resultado: GuardarPerfilTributarioResultadoApi = this.perfil()
         ? await this.perfilApi.actualizar(dto)
         : await this.perfilApi.crear(dto);
-      this.perfil.set(perfil);
-      this.triggerToast('✅ Perfil tributario guardado correctamente.');
+      this.perfil.set(resultado.perfilTributario);
+      if (resultado.advertenciaSri) {
+        // El perfil sí se guardó; esto solo avisa que el SRI no confirmó el RUC.
+        this.triggerToast(`⚠️ Perfil guardado. ${resultado.advertenciaSri}`, 9000);
+      } else {
+        this.triggerToast('✅ Perfil tributario guardado correctamente.');
+      }
     } catch (error) {
       this.triggerToast(mensajeDeError(error, 'No se pudo guardar el perfil tributario.'));
     } finally {
@@ -612,6 +618,10 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
       this.triggerToast(resumen.mensaje);
       this.comprobantesRecibidos.set(await this.comprobantesApi.listar());
       this.showImportComprobantesModal.set(false);
+      // Algunas líneas ya quedan categorizadas automáticamente al importar
+      // (por las reglas de categorización): refresca Movimientos y
+      // Presupuestos ya mismo, no solo cuando el usuario corrija una línea.
+      void this.userData.cargarTodo();
     } catch (error) {
       this.triggerToast(mensajeDeError(error, 'No se pudo importar los archivos XML.'));
     } finally {
@@ -725,6 +735,9 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
       this.desglose.set(await this.comprobantesApi.obtenerDesglose(desgloseActual.comprobante.id));
       this.comprobantesRecibidos.set(await this.comprobantesApi.listar());
       this.triggerToast('✅ Categoría actualizada correctamente.');
+      // Esto es lo que crea/actualiza el Movimiento en el backend: refresca
+      // Movimientos y Presupuestos ya mismo para que el gasto se sume solo.
+      void this.userData.cargarTodo();
     } catch (error) {
       this.triggerToast(mensajeDeError(error, 'No se pudo actualizar la categoría de la línea.'));
     } finally {
@@ -732,9 +745,9 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
     }
   }
 
-  private triggerToast(msg: string) {
+  private triggerToast(msg: string, duracionMs = 4500) {
     this.toastMessage.set(msg);
-    setTimeout(() => this.toastMessage.set(null), 4500);
+    setTimeout(() => this.toastMessage.set(null), duracionMs);
   }
 
   private initNeuralCanvas(): void {

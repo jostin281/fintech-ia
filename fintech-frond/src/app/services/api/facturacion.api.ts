@@ -50,6 +50,17 @@ export interface CrearPerfilTributarioApi {
   puntoEmision?: string;
 }
 
+export interface GuardarPerfilTributarioResultadoApi {
+  perfilTributario: PerfilTributarioApi;
+  /**
+   * Presente cuando el backend no pudo confirmar el RUC contra el padrón
+   * público del SRI (servicio caído, cambió de formato, etc.). El perfil
+   * igual se guardó: esto es solo un aviso para que el usuario revise el
+   * RUC manualmente.
+   */
+  advertenciaSri?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PerfilTributarioApiService {
   private readonly http = inject(HttpClient);
@@ -67,18 +78,18 @@ export class PerfilTributarioApiService {
     }
   }
 
-  async crear(dto: CrearPerfilTributarioApi): Promise<PerfilTributarioApi> {
-    const respuesta = await firstValueFrom(
-      this.http.post<{ perfilTributario: PerfilTributarioApi }>(this.base, dto),
+  async crear(dto: CrearPerfilTributarioApi): Promise<GuardarPerfilTributarioResultadoApi> {
+    return firstValueFrom(
+      this.http.post<GuardarPerfilTributarioResultadoApi>(this.base, dto),
     );
-    return respuesta.perfilTributario;
   }
 
-  async actualizar(dto: Partial<CrearPerfilTributarioApi>): Promise<PerfilTributarioApi> {
-    const respuesta = await firstValueFrom(
-      this.http.patch<{ perfilTributario: PerfilTributarioApi }>(this.base, dto),
+  async actualizar(
+    dto: Partial<CrearPerfilTributarioApi>,
+  ): Promise<GuardarPerfilTributarioResultadoApi> {
+    return firstValueFrom(
+      this.http.patch<GuardarPerfilTributarioResultadoApi>(this.base, dto),
     );
-    return respuesta.perfilTributario;
   }
 }
 

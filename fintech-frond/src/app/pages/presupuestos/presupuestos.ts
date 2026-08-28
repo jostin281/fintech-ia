@@ -12,7 +12,7 @@ import {
 import { isPlatformBrowser, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
-import { UserDataService } from '../../services/user-data';
+import { UserDataService, estaEnMesRelativo } from '../../services/user-data';
 import { mensajeDeError } from '../../services/http-error';
 
 export interface Budget {
@@ -53,10 +53,18 @@ export class Presupuestos implements AfterViewInit, OnDestroy {
   readonly formIcon = signal('🛒');
   readonly formColor = signal('#06b6d4');
   readonly saving = signal(false);
+  readonly creandoTodosSinAsignar = signal(false);
 
   // Form Signals for Adding Expense
   readonly expenseAmount = signal<number | null>(null);
   readonly expenseConcept = signal('');
+
+  // Form Signals for Editing a Budget's Limit
+  readonly showEditModal = signal(false);
+  readonly editBudgetId = signal<string | null>(null);
+  readonly editBudgetCategoria = signal('');
+  readonly editLimit = signal<number | null>(null);
+  readonly savingEdit = signal(false);
 
   /** Categorías de gasto que todavía no tienen presupuesto este mes. */
   readonly categoriasDisponibles = computed(() => {
@@ -80,6 +88,27 @@ export class Presupuestos implements AfterViewInit, OnDestroy {
   readonly totalSpent = computed(() => this.budgets().reduce((acc, b) => acc + b.spent, 0));
   readonly totalRemaining = computed(() => this.totalLimit() - this.totalSpent());
   readonly globalPercent = computed(() => Math.min(100, Math.round((this.totalSpent() / this.totalLimit()) * 100)));
+
+  readonly gastosSinPresupuesto = computed(() => {
+    const categoriasConPresupuesto = new Set(this.userData.budgets().map((b) => b.categoriaId));
+    const porCategoria = new Map<number, { categoriaId: number; nombre: string; monto: number }>();
+
+    for (const t of this.userData.transactions()) {
+      if (t.type !== 'egreso') continue;
+      if (!estaEnMesRelativo(t.fechaIso, 0)) continue;
+      if (categoriasConPresupuesto.has(t.categoriaId)) continue;
+
+      const monto = Math.abs(t.amount);
+      const existente = porCategoria.get(t.categoriaId);
+      if (existente) {
+        existente.monto += monto;
+      } else {
+        porCategoria.set(t.categoriaId, { categoriaId: t.categoriaId, nombre: t.category, monto });
+      }
+    }
+
+    return Array.from(porCategoria.values()).sort((a, b) => b.monto - a.monto);
+  });
 
   readonly filteredBudgets = computed(() => {
     const f = this.filter();
@@ -113,6 +142,7 @@ export class Presupuestos implements AfterViewInit, OnDestroy {
     this.showModal.set(true);
   }
 
+
   closeCreateModal() {
     this.showModal.set(false);
   }
@@ -132,6 +162,72 @@ export class Presupuestos implements AfterViewInit, OnDestroy {
       this.triggerToast(mensajeDeError(error, 'No se pudo crear el presupuesto.'));
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  async crearTodosLosPresupuestosSinAsignar() {
+    const pendientes = this.gastosSinPresupuesto();
+    if (pendientes.length === 0) return;
+
+    this.creandoTodosSinAsignar.set(true);
+    let creados = 0;
+    let fallidos = 0;
+    try {
+      for (const gasto of pendientes) {
+        try {
+          await this.userData.addBudget({
+            categoriaId: gasto.categoriaId,
+            limit: Math.ceil(gasto.monto),
+          });
+          creados++;
+        } catch {
+          fallidos++;
+        }
+      }
+
+      if (fallidos === 0) {
+        this.triggerToast(`✅ Se crearon ${creados} presupuesto${creados === 1 ? '' : 's'} automáticamente.`);
+      } else if (creados > 0) {
+        this.triggerToast(`Se crearon ${creados}, pero ${fallidos} no se pudieron crear. Intenta de nuevo con esas.`);
+      } else {
+        this.triggerToast('No se pudo crear ningún presupuesto. Intenta de nuevo.');
+      }
+    } finally {
+      this.creandoTodosSinAsignar.set(false);
+    }
+  }
+
+  openEditModal(budget: Budget) {
+    this.editBudgetId.set(budget.id);
+    this.editBudgetCategoria.set(budget.category);
+    this.editLimit.set(budget.limit);
+    this.showEditModal.set(true);
+  }
+
+  closeEditModal() {
+    if (this.savingEdit()) return;
+    this.showEditModal.set(false);
+    this.editBudgetId.set(null);
+  }
+
+  async guardarEdicionLimite() {
+    const id = this.editBudgetId();
+    const nuevoLimite = this.editLimit();
+    if (!id || !nuevoLimite || nuevoLimite <= 0) {
+      this.triggerToast('Ingresa un límite mayor que cero.');
+      return;
+    }
+
+    this.savingEdit.set(true);
+    try {
+      await this.userData.updateBudgetLimit(id, nuevoLimite);
+      this.triggerToast('✅ Límite actualizado correctamente.');
+      this.showEditModal.set(false);
+      this.editBudgetId.set(null);
+    } catch (error) {
+      this.triggerToast(mensajeDeError(error, 'No se pudo actualizar el límite.'));
+    } finally {
+      this.savingEdit.set(false);
     }
   }
 

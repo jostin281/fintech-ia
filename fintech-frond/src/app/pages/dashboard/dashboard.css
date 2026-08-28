@@ -148,6 +148,7 @@
 .dashboard-grid { padding: 0 2rem 2.5rem; display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.25rem; }
 .card { background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.25rem; padding: 1.35rem; transition: border-color .3s; }
 .card-title { font-size: 1rem; font-weight: 700; color: #f8fafc; margin: 0; }
+.balance-scope-hint { font-size: 10.5px; color: #64748b; margin: 2px 0 0; }
 
 /* Balance Hero Card */
 .balance-card {
@@ -178,6 +179,8 @@
 .balance-amount { font-size: 2.5rem; font-weight: 900; letter-spacing: -1px; color: white; display: flex; align-items: baseline; gap: .25rem; }
 .currency-symbol { font-size: 1.4rem; color: #64748b; font-weight: 600; }
 .growth-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; color: #34d399; background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.3); padding: 4px 10px; border-radius: 999px; margin-left: 0.5rem; }
+.growth-badge.negative { color: #f87171; background: rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.3); }
+.growth-badge.neutral { color: #94a3b8; background: rgba(148,163,184,0.1); border-color: rgba(148,163,184,0.25); font-weight: 600; }
 .trend-chart-wrap { flex: 1; max-width: 220px; }
 
 .balance-stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.875rem; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 1rem; }

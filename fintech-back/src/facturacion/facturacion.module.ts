@@ -5,6 +5,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { BorradoresSriExportacionService } from './borradores-sri-exportacion.service';
 import { ClientesFacturacionController } from './clientes-facturacion.controller';
 import { ClientesFacturacionService } from './clientes-facturacion.service';
+import { ConsultaRucSriService } from './consulta-ruc-sri.service';
 import { FacturasController } from './facturas.controller';
 import { FacturasService } from './facturas.service';
 import { FirmaElectronicaController } from './firma-electronica.controller';
@@ -31,6 +32,7 @@ import { RetencionesRecibidasService } from './retenciones-recibidas.service';
   ],
   providers: [
     PerfilTributarioService,
+    ConsultaRucSriService,
     FirmaElectronicaService,
     ClientesFacturacionService,
     ProductosServiciosService,

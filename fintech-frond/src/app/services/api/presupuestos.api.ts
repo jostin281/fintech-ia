@@ -59,6 +59,16 @@ export class PresupuestosApiService {
     return respuesta.presupuesto;
   }
 
+  async actualizar(
+    id: number,
+    dto: { montoLimite?: number; porcentajeAlerta?: number },
+  ): Promise<PresupuestoApi> {
+    const respuesta = await firstValueFrom(
+      this.http.patch<{ mensaje: string; presupuesto: PresupuestoApi }>(`${this.base}/${id}`, dto),
+    );
+    return respuesta.presupuesto;
+  }
+
   async eliminar(id: number): Promise<void> {
     await firstValueFrom(this.http.delete(`${this.base}/${id}`));
   }

@@ -100,93 +100,9 @@ export class Bienvenida implements AfterViewInit, OnDestroy {
     }, 1300);
   }
 
-  /* ── Canvas neuronal animado (Bolitas Flotantes Neón Gran Visibilidad) ── */
+  /* ── Fondo del canvas desactivado: sin animación, más limpio ── */
   private initNeuralCanvas(): void {
-    const canvas = this.canvasRef?.nativeElement;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let width  = (canvas.width  = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
-
-    this.resizeHandler = () => {
-      width  = canvas.width  = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    };
-    window.addEventListener('resize', this.resizeHandler);
-
-    interface NeuralNode {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      radius: number;
-      color: string;
-      shadow: string;
-    }
-
-    const colors = [
-      { fill: '#94a3b8', shadow: '#94a3b8' },
-      { fill: '#64748b', shadow: '#64748b' },
-      { fill: '#cbd5e1', shadow: '#cbd5e1' },
-      { fill: '#475569', shadow: '#475569' },
-    ];
-
-    const nodes: NeuralNode[] = [];
-    const nodeCount = Math.min(Math.floor(width / 18), 85);
-
-    for (let i = 0; i < nodeCount; i++) {
-      const palette = colors[i % colors.length];
-      nodes.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.8,
-        vy: (Math.random() - 0.5) * 0.8,
-        radius: Math.random() * 3 + 3,
-        color: palette.fill,
-        shadow: palette.shadow,
-      });
-    }
-
-    const render = () => {
-      ctx.clearRect(0, 0, width, height);
-
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 160) {
-            const opacity = (1 - dist / 160) * 0.35;
-            ctx.beginPath();
-            ctx.moveTo(nodes[i].x, nodes[i].y);
-            ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.strokeStyle = `rgba(148, 163, 184, ${opacity})`;
-            ctx.lineWidth = 1.2;
-            ctx.stroke();
-          }
-        }
-      }
-
-      for (const node of nodes) {
-        node.x += node.vx;
-        node.y += node.vy;
-        if (node.x < 0 || node.x > width)  node.vx *= -1;
-        if (node.y < 0 || node.y > height) node.vy *= -1;
-
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-        ctx.fillStyle = node.color;
-        ctx.shadowBlur = 18;
-        ctx.shadowColor = node.shadow;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      }
-
-      this.animationFrameId = requestAnimationFrame(render);
-    };
-
-    render();
+    // Fondo estático y limpio; antes dibujaba una red de partículas
+    // animada de fondo, se desactivó para evitar distracciones visuales.
   }
 }

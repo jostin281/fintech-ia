@@ -11,6 +11,7 @@ import {
   CrearPerfilTributarioDto,
   TipoIdentificacionPerfilDto,
 } from './dto/crear-perfil-tributario.dto';
+import { ConsultaRucSriService } from './consulta-ruc-sri.service';
 import {
   esCedulaEcuadorValida,
   esRucEcuadorValido,
@@ -18,7 +19,10 @@ import {
 
 @Injectable()
 export class PerfilTributarioService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly consultaRucSriService: ConsultaRucSriService,
+  ) {}
 
   async crear(
     usuarioId: number,
@@ -37,6 +41,9 @@ export class PerfilTributarioService {
       crearPerfilTributarioDto.tipoIdentificacion,
       crearPerfilTributarioDto.ruc,
     );
+
+    const ambienteSri = crearPerfilTributarioDto.ambienteSri ?? 'PRUEBAS';
+    const advertenciaSri = await this.validarRucContraSri(ruc, ambienteSri);
 
     const perfilDelUsuario =
       await this.prismaService.perfilTributario.findUnique({
@@ -76,7 +83,7 @@ export class PerfilTributarioService {
           codigoAgenteRetencion: crearPerfilTributarioDto.codigoAgenteRetencion,
           establecimiento: crearPerfilTributarioDto.establecimiento ?? '001',
           puntoEmision: crearPerfilTributarioDto.puntoEmision ?? '001',
-          ambienteSri: crearPerfilTributarioDto.ambienteSri ?? 'PRUEBAS',
+          ambienteSri,
           usuarioId,
         },
       });
@@ -84,6 +91,7 @@ export class PerfilTributarioService {
       return {
         mensaje: 'Perfil tributario creado correctamente',
         perfilTributario: this.presentar(perfil),
+        ...(advertenciaSri ? { advertenciaSri } : {}),
       };
     } catch (error: unknown) {
       if (this.esViolacionDeRestriccionUnica(error)) {
@@ -142,6 +150,7 @@ export class PerfilTributarioService {
     this.validarCompatibilidadRegimen(tipoContribuyente, regimenTributario);
 
     let ruc: string | undefined;
+    let advertenciaSri: string | undefined;
     if (actualizarPerfilTributarioDto.ruc !== undefined) {
       this.validarCompatibilidadIdentificacion(
         actualizarPerfilTributarioDto.tipoIdentificacion,
@@ -150,6 +159,10 @@ export class PerfilTributarioService {
       ruc = this.normalizarRuc(
         actualizarPerfilTributarioDto.tipoIdentificacion,
         actualizarPerfilTributarioDto.ruc,
+      );
+      advertenciaSri = await this.validarRucContraSri(
+        ruc,
+        perfilExistente.ambienteSri as 'PRUEBAS' | 'PRODUCCION',
       );
     }
 
@@ -249,6 +262,7 @@ export class PerfilTributarioService {
       return {
         mensaje: 'Perfil tributario actualizado correctamente',
         perfilTributario: this.presentar(perfil),
+        ...(advertenciaSri ? { advertenciaSri } : {}),
       };
     } catch (error: unknown) {
       if (this.esViolacionDeRestriccionUnica(error)) {
@@ -322,6 +336,49 @@ export class PerfilTributarioService {
         'El RUC no tiene un formato o dígito verificador válido',
       );
     }
+  }
+
+  /**
+   * Confirma el RUC contra el padrón público del SRI antes de guardar el
+   * perfil. Si el SRI confirma que el RUC no existe, o que existe pero
+   * está inactivo/suspendido, se rechaza la operación: es un dato
+   * confiable y bloquear tiene sentido. Pero si el servicio del SRI no
+   * responde (está caído, cambió de URL, problema de red, etc.) NO se
+   * bloquea al usuario: el perfil se guarda igual y se devuelve una
+   * advertencia, porque este es un endpoint interno del SRI, no una API
+   * oficial garantizada.
+   */
+  private async validarRucContraSri(
+    ruc: string,
+    ambienteSri: 'PRUEBAS' | 'PRODUCCION',
+  ): Promise<string | undefined> {
+    // En PRUEBAS se usan RUC ficticios de sandbox (los que el propio SRI
+    // documenta para certificación) que nunca van a existir en el padrón
+    // público real, así que validar ahí solo rechazaría perfiles válidos
+    // de desarrollo. Solo se exige en PRODUCCION.
+    if (ambienteSri !== 'PRODUCCION') {
+      return undefined;
+    }
+
+    const resultado = await this.consultaRucSriService.consultar(ruc);
+
+    if (resultado.tipo === 'NO_EXISTE') {
+      throw new BadRequestException('El RUC no está registrado en el SRI');
+    }
+
+    if (resultado.tipo === 'SERVICIO_NO_DISPONIBLE') {
+      return `No se pudo validar el RUC contra el SRI en este momento (${resultado.motivo}). El perfil se guardó igual, pero verifica manualmente que el RUC esté correcto.`;
+    }
+
+    const estado = resultado.info.estado?.toUpperCase() ?? null;
+
+    if (estado && estado !== 'ACTIVO') {
+      throw new BadRequestException(
+        `El RUC existe en el SRI pero su estado es "${resultado.info.estado}", no ACTIVO`,
+      );
+    }
+
+    return undefined;
   }
 
   private presentar(perfil: {

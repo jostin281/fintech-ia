@@ -37,7 +37,7 @@
         </div>
         <div>
           <p class="kpi-label">Ahorro Acumulado Total</p>
-          <p class="kpi-value">${{ totalSaved() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+          <p class="kpi-value">${{ totalSaved() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
         </div>
       </div>
 
@@ -47,7 +47,7 @@
         </div>
         <div>
           <p class="kpi-label">Objetivo Global Combinado</p>
-          <p class="kpi-value">${{ totalTarget() | number:'1.2-2' }} <span class="kpi-curr">MXN</span></p>
+          <p class="kpi-value">${{ totalTarget() | number:'1.2-2' }} <span class="kpi-curr">USD</span></p>
         </div>
       </div>
 
@@ -70,7 +70,7 @@
           <span class="global-pct-chip">{{ globalPercent() }}%</span>
         </div>
         <span class="text-xs text-slate-400">
-          Faltan ${{ (totalTarget() - totalSaved()) | number:'1.0-0' }} MXN para el 100%
+          Faltan ${{ (totalTarget() - totalSaved()) | number:'1.0-0' }} USD para el 100%
         </span>
       </div>
       
@@ -143,7 +143,7 @@
           @if (g.current < g.target) {
             <div class="deposit-hint flex items-center justify-between text-[11px] text-slate-400 bg-white/5 p-2 rounded-lg">
               <span>Aporte mensual sugerido:</span>
-              <span class="font-bold text-white">${{ g.monthlyDeposit | number:'1.0-0' }} MXN/mes</span>
+              <span class="font-bold text-white">${{ g.monthlyDeposit | number:'1.0-0' }} USD/mes</span>
             </div>
           }
 
@@ -189,13 +189,13 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div class="form-group">
-              <label class="form-label">Monto Objetivo ($ MXN)</label>
+              <label class="form-label">Monto Objetivo ($ USD)</label>
               <input type="number" class="form-input" placeholder="50000" 
                 [value]="formTarget() ?? ''" (input)="formTarget.set($any($event.target).valueAsNumber)" />
             </div>
 
             <div class="form-group">
-              <label class="form-label">Aporte Inicial ($ MXN)</label>
+              <label class="form-label">Aporte Inicial ($ USD)</label>
               <input type="number" class="form-input" placeholder="5000" 
                 [value]="formInitial() ?? ''" (input)="formInitial.set($any($event.target).valueAsNumber)" />
             </div>
@@ -240,7 +240,7 @@
 
         <div class="modal-body">
           <div class="form-group">
-            <label class="form-label">Monto a Abonar ($ MXN)</label>
+            <label class="form-label">Monto a Abonar ($ USD)</label>
             <input type="number" class="form-input text-lg font-bold text-cyan-400" placeholder="1000" 
               [value]="depositAmount() ?? ''" (input)="depositAmount.set($any($event.target).valueAsNumber)" />
           </div>
