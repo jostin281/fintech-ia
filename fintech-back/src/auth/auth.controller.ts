@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 
 import { AuthService } from './auth.service';
+import { DemoService } from './demo.service';
 import { Publico } from './decorators/publico.decorator';
 import { CambiarContrasenaDto } from './dto/cambiar-contrasena.dto';
 import { IniciarSesionDto } from './dto/iniciar-sesion.dto';
@@ -30,7 +31,10 @@ import type { SolicitudAutenticada } from './interfaces/usuario-autenticado.inte
 @ApiTags('Autenticación')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly demoService: DemoService,
+  ) {}
 
   // POST /api/auth/registro
   @Publico()
@@ -78,6 +82,22 @@ export class AuthController {
     iniciarSesionDto: IniciarSesionDto,
   ) {
     return this.authService.iniciarSesion(iniciarSesionDto);
+  }
+
+  // POST /api/auth/demo
+  // Crea una cuenta temporal con datos de ejemplo, sin pedir credenciales.
+  // La cuenta y sus datos se borran solos pasados unos minutos.
+  @Publico()
+  @Post('demo')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Inicia una sesión demo temporal con datos de ejemplo',
+  })
+  @ApiOkResponse({
+    description: 'Sesión demo iniciada',
+  })
+  iniciarDemo() {
+    return this.demoService.crearSesionDemo();
   }
 
   // GET /api/auth/perfil

@@ -193,6 +193,12 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     const redirect = this.route.snapshot.queryParamMap.get('redirect');
     if (redirect) this.redirectUrl = redirect;
 
+    // Llega aquí después de que termina una demo (ver app.ts) para abrir
+    // directamente la pestaña de registro.
+    if (this.route.snapshot.queryParamMap.get('modo') === 'registro') {
+      this.setMode('register');
+    }
+
     if (this.isBrowser) {
       const rememberedEmail = this.auth.getRememberedEmail();
       if (rememberedEmail) {
@@ -931,9 +937,22 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => this.router.navigateByUrl(this.redirectUrl), 700);
   }
 
-  fillDemoCredentials(): void {
+  async usarDemo(): Promise<void> {
     this.setMode('login');
-    this.loginForm.patchValue({ email: 'demo@fintech.ai', password: 'Demo1234', remember: true });
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.loading.set(true);
+
+    const result = await this.auth.loginDemo();
+    this.loading.set(false);
+
+    if (!result.success) {
+      this.errorMessage.set(result.message ?? 'No se pudo iniciar la demo.');
+      return;
+    }
+
+    this.successMessage.set('¡Demo lista! Explorando con datos de ejemplo...');
+    setTimeout(() => this.router.navigateByUrl('/dashboard'), 700);
   }
 
   continueWithProvider(provider: SocialProvider): void {

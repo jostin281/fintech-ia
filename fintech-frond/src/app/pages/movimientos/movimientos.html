@@ -209,14 +209,12 @@
     <div class="floating-tip-card">
       <div class="tip-header">
         <div class="flex items-center gap-2">
-          <span class="tip-icon">💸</span>
-          <span class="tip-title">Detector Gastos Hormiga IA</span>
+          <span class="tip-icon">{{ tips.tipMovimientos().icon }}</span>
+          <span class="tip-title">{{ tips.tipMovimientos().title }}</span>
         </div>
         <button class="btn-close-tip" (click)="showTipWidget.set(false)" title="Cerrar consejo">✕</button>
       </div>
-      <p class="tip-body">
-        <strong>Fuga de Capital:</strong> Pequeños consumos diarios de $3.50 USD suman $1,277 USD al año. Preparar café o botanas en casa 3 días a la semana libera tu presupuesto.
-      </p>
+      <p class="tip-body" [innerHTML]="tips.tipMovimientos().body"></p>
     </div>
   }
 

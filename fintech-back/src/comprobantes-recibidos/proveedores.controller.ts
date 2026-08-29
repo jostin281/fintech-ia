@@ -9,10 +9,12 @@ import {
 } from '@nestjs/swagger';
 
 import type { SolicitudAutenticada } from '../auth/interfaces/usuario-autenticado.interface';
+import { BloqueadoEnDemo } from '../auth/decorators/bloqueado-en-demo.decorator';
 import { ProveedoresService } from './proveedores.service';
 
 @ApiTags('Comprobantes recibidos - Proveedores')
 @ApiBearerAuth('access-token')
+@BloqueadoEnDemo()
 @Controller('comprobantes-recibidos/proveedores')
 export class ProveedoresController {
   constructor(private readonly proveedoresService: ProveedoresService) {}

@@ -13,6 +13,7 @@ import {
   SriClient,
   TipoComprobante,
   TipoEmision,
+  generarClaveAcceso,
   type Factura,
   type Message,
 } from 'sri-ec';
@@ -26,6 +27,7 @@ import {
 } from './dto/crear-factura.dto';
 import { FiltrarFacturasDto } from './dto/filtrar-facturas.dto';
 import { FirmaElectronicaService } from './firma-electronica.service';
+import { MailerService } from '../notificaciones/mailer.service';
 import {
   calcularTotalesFactura,
   type EntradaDetalleCalculo,
@@ -85,6 +87,7 @@ export class FacturasService {
     private readonly prismaService: PrismaService,
     private readonly firmaElectronicaService: FirmaElectronicaService,
     private readonly configService: ConfigService,
+    private readonly mailerService: MailerService,
   ) {}
 
   async crear(usuarioId: number, crearFacturaDto: CrearFacturaDto) {
@@ -413,6 +416,128 @@ export class FacturasService {
     return this.enviarXmlFirmado(usuarioId, facturaId);
   }
 
+  /**
+   * Versión para cuentas demo del flujo de emisión: asigna secuencial y una
+   * clave de acceso con el mismo algoritmo oficial del SRI (Módulo 11), pero
+   * nunca firma con un certificado real ni se conecta al SRI real — pasa
+   * directo a "AUTORIZADA" localmente. Así una cuenta demo puede ver la
+   * factura terminada (incluyendo el RIDE en PDF) sin tocar nada externo.
+   */
+  async emitirSimulado(usuarioId: number, facturaId: number) {
+    const facturaInicial = await this.obtenerFacturaCompleta(
+      usuarioId,
+      facturaId,
+    );
+
+    if (facturaInicial.estado !== 'BORRADOR') {
+      throw new ConflictException(
+        'La factura ya inició su proceso de emisión; consulte o reintente su estado',
+      );
+    }
+
+    return this.prismaService.$transaction(async (transaccion) => {
+      await transaccion.$queryRaw`
+        SELECT pg_advisory_xact_lock(${facturaId})
+      `;
+
+      let factura = await transaccion.facturaElectronica.findFirst({
+        where: {
+          id: facturaId,
+          eliminadoEn: null,
+          perfilTributario: { usuarioId, activo: true },
+        },
+        include: {
+          detalles: true,
+          cliente: true,
+          perfilTributario: true,
+        },
+      });
+
+      if (!factura || factura.estado !== 'BORRADOR') {
+        throw new ConflictException(
+          'La factura ya inició su proceso de emisión',
+        );
+      }
+
+      if (factura.secuencial === null) {
+        const secuencia = await transaccion.secuenciaComprobante.upsert({
+          where: {
+            perfilTributarioId_codigoDocumento_establecimiento_puntoEmision: {
+              perfilTributarioId: factura.perfilTributarioId,
+              codigoDocumento: CODIGO_DOCUMENTO_FACTURA,
+              establecimiento: factura.establecimiento,
+              puntoEmision: factura.puntoEmision,
+            },
+          },
+          create: {
+            perfilTributarioId: factura.perfilTributarioId,
+            codigoDocumento: CODIGO_DOCUMENTO_FACTURA,
+            establecimiento: factura.establecimiento,
+            puntoEmision: factura.puntoEmision,
+            siguienteSecuencial: 2,
+          },
+          update: {
+            siguienteSecuencial: { increment: 1 },
+          },
+          select: { siguienteSecuencial: true },
+        });
+
+        factura = await transaccion.facturaElectronica.update({
+          where: { id: factura.id },
+          data: { secuencial: secuencia.siguienteSecuencial - 1 },
+          include: {
+            detalles: true,
+            cliente: true,
+            perfilTributario: true,
+          },
+        });
+      }
+
+      const codigoNumerico = Math.floor(
+        10000000 + Math.random() * 90000000,
+      ).toString();
+
+      const claveAcceso = generarClaveAcceso({
+        fecha: formatearFechaSri(factura.fechaEmision),
+        tipoComprobante: CODIGO_DOCUMENTO_FACTURA,
+        ruc: factura.emisorRuc,
+        ambiente: this.mapearAmbiente(factura.emisorAmbienteSri),
+        serie: `${factura.establecimiento}${factura.puntoEmision}`,
+        numero: String(factura.secuencial).padStart(9, '0'),
+        codigoNum: codigoNumerico,
+      });
+
+      const facturaAutorizada = await transaccion.facturaElectronica.update({
+        where: { id: factura.id },
+        data: {
+          estado: 'AUTORIZADA',
+          claveAcceso,
+          numeroAutorizacion: claveAcceso,
+          fechaAutorizacion: new Date(),
+          ultimoIntentoSri: new Date(),
+          mensajesSri: [
+            {
+              tipo: 'INFO',
+              mensaje:
+                'Emisión simulada en modo demo: no se envió al SRI real.',
+            },
+          ],
+        },
+        include: {
+          detalles: true,
+          cliente: true,
+          perfilTributario: true,
+        },
+      });
+
+      return {
+        mensaje:
+          'Factura emitida en modo demo (simulada, no se conectó al SRI real)',
+        factura: this.presentar(facturaAutorizada),
+      };
+    });
+  }
+
   async reenviarSri(usuarioId: number, facturaId: number) {
     const factura = await this.obtenerFacturaCompleta(usuarioId, facturaId);
 
@@ -503,6 +628,66 @@ export class FacturasService {
     });
 
     return Buffer.from(pdf);
+  }
+
+  /**
+   * Envía por correo el RIDE (PDF) de una factura ya autorizada al cliente.
+   * No modifica la factura ni el SRI: solo genera el mismo PDF que ya
+   * genera /ride y lo adjunta a un correo. Requiere SMTP configurado en el
+   * servidor (ver MailerService); si no lo está, devuelve un error claro.
+   */
+  async enviarPorCorreo(
+    usuarioId: number,
+    facturaId: number,
+    correoDestino: string | undefined,
+  ) {
+    const factura = await this.obtenerFacturaCompleta(usuarioId, facturaId);
+
+    if (!factura.claveAcceso || factura.estado === 'BORRADOR') {
+      throw new ConflictException(
+        'Solo se puede enviar por correo una factura ya emitida',
+      );
+    }
+
+    const destino = correoDestino?.trim() || factura.compradorCorreo?.trim();
+
+    if (!destino) {
+      throw new BadRequestException(
+        'El cliente no tiene un correo registrado; indica uno para enviar la factura',
+      );
+    }
+
+    const pdf = await this.generarRide(usuarioId, facturaId);
+    const datos = this.presentar(factura);
+
+    await this.mailerService.enviar({
+      para: destino,
+      asunto: `Factura electrónica ${datos.numero ?? factura.id} - ${factura.emisorRazonSocial}`,
+      textoPlano:
+        `Hola ${factura.compradorRazonSocial},\n\n` +
+        `Adjuntamos tu factura electrónica ${datos.numero ?? ''} emitida por ${factura.emisorRazonSocial} ` +
+        `por un total de $${factura.importeTotal.toFixed(2)}.\n\n` +
+        `Clave de acceso: ${factura.claveAcceso}\n\n` +
+        'Este es un correo automático, por favor no respondas a este mensaje.',
+      html:
+        `<p>Hola <strong>${factura.compradorRazonSocial}</strong>,</p>` +
+        `<p>Adjuntamos tu factura electrónica <strong>${datos.numero ?? ''}</strong> emitida por ` +
+        `${factura.emisorRazonSocial} por un total de <strong>$${factura.importeTotal.toFixed(2)}</strong>.</p>` +
+        `<p style="font-size:12px;color:#666;">Clave de acceso: ${factura.claveAcceso}</p>` +
+        '<p style="font-size:12px;color:#999;">Este es un correo automático, por favor no respondas a este mensaje.</p>',
+      adjuntos: [
+        {
+          filename: `factura-${datos.numero ?? factura.id}-ride.pdf`,
+          content: pdf,
+          contentType: 'application/pdf',
+        },
+      ],
+    });
+
+    return {
+      mensaje: `Factura enviada correctamente a ${destino}`,
+      correo: destino,
+    };
   }
 
   private async enviarXmlFirmado(usuarioId: number, facturaId: number) {

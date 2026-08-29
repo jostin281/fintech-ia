@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 
 // Permite cargar las variables almacenadas en .env.
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -26,6 +27,9 @@ import { RdepModule } from './rdep/rdep.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    // Habilita @Cron(...) en los servicios (usado por la descarga
+    // automática opcional de comprobantes SRI).
+    ScheduleModule.forRoot(),
     PrismaModule,
     CategoriasModule,
     UsuariosModule,

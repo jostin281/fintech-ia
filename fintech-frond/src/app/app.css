@@ -1,0 +1,83 @@
+.demo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(4, 8, 18, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: demo-overlay-in 0.25s ease-out;
+}
+
+.demo-card {
+  width: 100%;
+  max-width: 26rem;
+  text-align: center;
+  padding: 2.25rem 2rem 2rem;
+  border-radius: 1.25rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 60px rgba(6, 182, 212, 0.18), 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.demo-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.demo-logo {
+  height: 3.25rem;
+  width: auto;
+  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.5));
+}
+
+.demo-card h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.demo-card p {
+  margin: 0 0 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: rgba(203, 213, 225, 0.85);
+}
+
+.demo-cta {
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #04121a;
+  cursor: pointer;
+  background: linear-gradient(90deg, #22d3ee, #a855f7);
+  box-shadow: 0 8px 24px rgba(34, 211, 238, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.demo-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(34, 211, 238, 0.35);
+}
+
+.demo-cta:active {
+  transform: translateY(0);
+}
+
+@keyframes demo-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

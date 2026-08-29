@@ -144,6 +144,9 @@
                     <td class="text-right">
                       <p class="font-bold text-white text-sm">${{ f.totales.importeTotal | number:'1.2-2' }}</p>
                       <p class="text-[10px] text-slate-400">Sub: ${{ f.totales.totalSinImpuestos | number:'1.2-2' }} + IVA ${{ f.totales.iva | number:'1.2-2' }}</p>
+                      @if (+f.totales.totalDescuento > 0) {
+                        <p class="text-[10px] text-emerald-400">Descuento: -${{ f.totales.totalDescuento | number:'1.2-2' }}</p>
+                      }
                     </td>
                     <td>
                       <div class="flex items-center justify-center gap-2 flex-wrap">
@@ -154,6 +157,9 @@
                         @if (f.estado === 'AUTORIZADA' || f.estado === 'RECIBIDA') {
                           <button class="btn-action-ride" (click)="descargarRide(f.id)" title="Descargar RIDE PDF">RIDE</button>
                           <button class="btn-action-xml" (click)="descargarXml(f.id)" title="Descargar XML firmado">XML</button>
+                          <button class="btn-action-xml" [disabled]="enviandoCorreoId() === f.id" (click)="enviarCorreoFactura(f.id)" title="Enviar RIDE por correo al cliente">
+                            {{ enviandoCorreoId() === f.id ? '...' : '✉️' }}
+                          </button>
                         }
                       </div>
                     </td>
@@ -162,6 +168,66 @@
               </tbody>
             </table>
           }
+        </div>
+
+        <!-- ── Descarga automática desde SRI (opcional, apagada por defecto) ── -->
+        <div class="table-card mt-4">
+          <div class="p-4">
+            <h3 class="text-sm font-bold text-white mb-1">🤖 Descarga automática de comprobantes (opcional)</h3>
+            <p class="text-[12px] text-slate-400 mb-3">
+              En vez de descargar tú los XML del SRI y subirlos aquí, puedes guardar tu usuario y clave de
+              SRI en Línea para que el sistema los descargue por ti todos los días.
+            </p>
+
+            <div class="notice-card red mb-3">
+              ⚠️ Esto SÍ guarda tu clave del SRI (cifrada) y automatiza el portal del SRI, que no ofrece una
+              API oficial para esto. No hay forma de usar verificación en dos pasos en este flujo. Si el
+              SRI cambia su portal, la descarga puede fallar sin previo aviso — revisa el estado de la
+              última ejecución aquí abajo. Es tu decisión activarla o no; la importación manual de arriba
+              sigue funcionando igual sin este riesgo.
+            </div>
+
+            @if (sriCredencial()?.configurado) {
+              <div class="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                <div>
+                  <p class="text-xs text-slate-300">
+                    Usuario SRI guardado: <strong class="text-white font-mono">{{ sriCredencial()!.usuarioSri }}</strong>
+                    @if (sriCredencial()!.ciAdicionalSri) {
+                      <span class="text-slate-400"> · C.I. adicional: <strong class="text-white font-mono">{{ sriCredencial()!.ciAdicionalSri }}</strong></span>
+                    }
+                  </p>
+                  <p class="text-[11px] text-slate-400 mt-1">
+                    Descarga automática diaria:
+                    <strong [class.text-emerald-400]="sriCredencial()!.autoDescargaHabilitada" [class.text-slate-400]="!sriCredencial()!.autoDescargaHabilitada">
+                      {{ sriCredencial()!.autoDescargaHabilitada ? 'Activada' : 'Desactivada' }}
+                    </strong>
+                  </p>
+                  @if (sriCredencial()!.ultimaEjecucionEn) {
+                    <p class="text-[11px] mt-1" [class.text-emerald-400]="sriCredencial()!.ultimoResultado === 'EXITO'" [class.text-amber-400]="sriCredencial()!.ultimoResultado === 'ERROR'">
+                      Última ejecución: {{ sriCredencial()!.ultimaEjecucionEn | date:'dd/MM/yyyy HH:mm' }} — {{ sriCredencial()!.ultimoResultado }}
+                      @if (sriCredencial()!.ultimoMensaje) { · {{ sriCredencial()!.ultimoMensaje }} }
+                    </p>
+                  } @else {
+                    <p class="text-[11px] text-slate-500 mt-1">Todavía no se ha ejecutado.</p>
+                  }
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <button class="btn-cancel" (click)="toggleAutoDescargaSri()">
+                    {{ sriCredencial()!.autoDescargaHabilitada ? 'Desactivar' : 'Activar' }} descarga diaria
+                  </button>
+                  <button class="btn-cancel" [disabled]="descargandoSriAhora()" (click)="descargarSriAhora()">
+                    {{ descargandoSriAhora() ? 'Descargando...' : 'Probar ahora' }}
+                  </button>
+                  <button class="btn-cancel" (click)="openSriCredencialesModal()">Actualizar clave</button>
+                  <button class="btn-cancel" [disabled]="eliminandoSriCredenciales()" (click)="eliminarSriCredenciales()">
+                    {{ eliminandoSriCredenciales() ? 'Eliminando...' : 'Eliminar' }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <button class="btn-create" (click)="openSriCredencialesModal()">Guardar mis credenciales del SRI</button>
+            }
+          </div>
         </div>
       }
 
@@ -173,13 +239,18 @@
             <div class="empty-state"><div class="empty-icon">👤</div><h3 class="empty-title">Sin clientes registrados</h3></div>
           } @else {
             <table class="facturas-table">
-              <thead><tr><th>Identificación</th><th>Razón Social</th><th>Correo</th><th class="text-center">Acciones</th></tr></thead>
+              <thead><tr><th>Identificación</th><th>Razón Social</th><th>Correo</th><th>Teléfono</th><th>Dirección</th><th class="text-center">Acciones</th></tr></thead>
               <tbody>
                 @for (c of clientes(); track c.id) {
                   <tr>
                     <td><span class="font-mono text-xs">{{ c.tipoIdentificacion }}: {{ c.identificacion }}</span></td>
-                    <td>{{ c.razonSocial }}</td>
+                    <td>
+                      {{ c.razonSocial }}
+                      @if (c.nombreComercial) { <p class="text-[10px] text-slate-400">{{ c.nombreComercial }}</p> }
+                    </td>
                     <td>{{ c.correo || '—' }}</td>
+                    <td>{{ c.telefono || '—' }}</td>
+                    <td class="text-xs">{{ c.direccion || '—' }}</td>
                     <td class="text-center"><button class="btn-action-xml" (click)="eliminarCliente(c.id)">🗑️</button></td>
                   </tr>
                 }
@@ -255,8 +326,10 @@
         </div>
         <div class="notice-card cyan">
           ℹ️ Sube aquí los XML de tus facturas de compra/gasto descargadas desde
-          <strong>SRI en Línea → Comprobantes Electrónicos Recibidos</strong>. No pedimos ni guardamos tu
-          usuario ni contraseña del SRI: solo leemos los archivos que ya tienes.
+          <strong>SRI en Línea → Comprobantes Electrónicos Recibidos</strong>. Esta importación manual no pide
+          ni guarda tu usuario ni contraseña del SRI: solo lee los archivos que ya tienes.
+          Si prefieres que la app los descargue por ti, existe una función aparte, opcional y apagada por
+          defecto, más abajo — sí requiere tu clave del SRI y conviene leer la advertencia antes de activarla.
         </div>
         <div class="table-card">
           @if (comprobantesRecibidosFiltrados().length === 0) {
@@ -418,15 +491,39 @@
           </div>
           <div class="form-group">
             <label class="form-label">Número de Identificación</label>
-            <input class="form-input font-mono" [value]="clienteForm().identificacion" (input)="updateClienteForm('identificacion', $any($event.target).value)" />
+            <div class="flex gap-2">
+              <input class="form-input font-mono" [value]="clienteForm().identificacion" (input)="updateClienteForm('identificacion', $any($event.target).value)" />
+              @if (clienteForm().tipoIdentificacion === 'RUC') {
+                <button type="button" class="btn-action-xml" [disabled]="buscandoRuc()" (click)="buscarRucCliente()" title="Autocompletar razón social desde el SRI">
+                  {{ buscandoRuc() ? '...' : '🔍 Buscar' }}
+                </button>
+              }
+            </div>
+            @if (clienteForm().tipoIdentificacion === 'CEDULA') {
+              <p class="form-hint">El SRI no ofrece un padrón público para cédulas: escribe el nombre manualmente.</p>
+            }
           </div>
           <div class="form-group">
             <label class="form-label">Razón Social / Nombre</label>
             <input class="form-input" [value]="clienteForm().razonSocial" (input)="updateClienteForm('razonSocial', $any($event.target).value)" />
           </div>
           <div class="form-group">
+            <label class="form-label">Nombre Comercial (opcional)</label>
+            <input class="form-input" [value]="clienteForm().nombreComercial" (input)="updateClienteForm('nombreComercial', $any($event.target).value)" />
+          </div>
+          <div class="form-group">
             <label class="form-label">Correo (opcional)</label>
             <input class="form-input" type="email" [value]="clienteForm().correo" (input)="updateClienteForm('correo', $any($event.target).value)" />
+          </div>
+          <div class="form-row form-cols-2">
+            <div class="form-group">
+              <label class="form-label">Teléfono (opcional)</label>
+              <input class="form-input" [value]="clienteForm().telefono" (input)="updateClienteForm('telefono', $any($event.target).value)" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Dirección (opcional)</label>
+              <input class="form-input" [value]="clienteForm().direccion" (input)="updateClienteForm('direccion', $any($event.target).value)" />
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -474,29 +571,78 @@
   <!-- MODAL: NUEVA FACTURA -->
   @if (showFacturaModal()) {
     <div class="modal-backdrop" (click)="closeFacturaModal()">
-      <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-header"><h3 class="modal-title">Nueva Factura</h3><button class="btn-close" (click)="closeFacturaModal()">✕</button></div>
+      <div class="modal-card modal-card-wide" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">🧾 Nueva Factura</h3>
+            <p class="modal-subtitle">Se crea como borrador; luego la emites al SRI.</p>
+          </div>
+          <button class="btn-close" (click)="closeFacturaModal()">✕</button>
+        </div>
         <div class="modal-body">
           @if (clientes().length === 0 || productos().length === 0) {
             <div class="notice-card amber">⚠️ Necesitas al menos un cliente y un producto/servicio registrados.</div>
           } @else {
-            <div class="form-group">
-              <label class="form-label">Cliente</label>
-              <select class="form-input" [value]="facturaClienteId()" (change)="facturaClienteId.set(+$any($event.target).value)">
-                @for (c of clientes(); track c.id) { <option [value]="c.id">{{ c.razonSocial }} ({{ c.identificacion }})</option> }
-              </select>
+            <div class="modal-section-label">Cliente y fecha</div>
+            <div class="form-row form-cols-2">
+              <div class="form-group">
+                <label class="form-label">Cliente</label>
+                <select class="form-input" [value]="facturaClienteId()" (change)="facturaClienteId.set(+$any($event.target).value)">
+                  @for (c of clientes(); track c.id) { <option [value]="c.id">{{ c.razonSocial }} ({{ c.identificacion }})</option> }
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Fecha de Emisión</label>
+                <input class="form-input" type="date" [value]="facturaFechaEmision()" [max]="facturaFechaEmision()" (input)="facturaFechaEmision.set($any($event.target).value)" />
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Producto / Servicio</label>
-              <select class="form-input" [value]="facturaProductoId()" (change)="facturaProductoId.set(+$any($event.target).value)">
-                @for (p of productos(); track p.id) { <option [value]="p.id">{{ p.descripcion }} · ${{ p.precioUnitario }}</option> }
-              </select>
+
+            <div class="modal-section-label">Detalle de productos / servicios</div>
+            <div class="factura-lineas">
+              <div class="factura-linea-header">
+                <span>Producto / Servicio</span>
+                <span>Cantidad</span>
+                <span>Descuento</span>
+                <span></span>
+              </div>
+              @for (linea of facturaLineas(); track $index) {
+                <div class="factura-linea">
+                  <span class="factura-linea-numero">{{ $index + 1 }}</span>
+                  <select class="form-input" [value]="linea.productoServicioId" (change)="actualizarLineaFactura($index, 'productoServicioId', $any($event.target).value)">
+                    @for (p of productos(); track p.id) { <option [value]="p.id">{{ p.descripcion }} · ${{ p.precioUnitario }}</option> }
+                  </select>
+                  <input class="form-input" type="number" min="0" step="0.01" placeholder="1" [value]="linea.cantidad" (input)="actualizarLineaFactura($index, 'cantidad', $any($event.target).value)" />
+                  <input class="form-input" type="number" min="0" step="0.01" placeholder="0.00" [value]="linea.descuento" (input)="actualizarLineaFactura($index, 'descuento', $any($event.target).value)" />
+                  <button type="button" class="btn-quitar-linea" [disabled]="facturaLineas().length === 1" (click)="quitarLineaFactura($index)" title="Quitar línea">✕</button>
+                </div>
+              }
+              <button type="button" class="btn-agregar-linea" (click)="agregarLineaFactura()">+ Agregar producto</button>
             </div>
-            <div class="form-group">
-              <label class="form-label">Cantidad</label>
-              <input class="form-input" [value]="facturaCantidad()" (input)="facturaCantidad.set($any($event.target).value)" />
+
+            <div class="modal-section-label">Pago y observaciones</div>
+            <div class="form-row form-cols-2">
+              <div class="form-group">
+                <label class="form-label">Forma de Pago</label>
+                <select class="form-input" [value]="facturaFormaPago()" (change)="facturaFormaPago.set($any($event.target).value)">
+                  @for (fp of FORMAS_PAGO_SRI; track fp.codigo) { <option [value]="fp.codigo">{{ fp.etiqueta }}</option> }
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Observación (opcional)</label>
+                <input class="form-input" placeholder="Ej. pago mediante transferencia" [value]="facturaObservacion()" (input)="facturaObservacion.set($any($event.target).value)" />
+              </div>
             </div>
-            <div class="notice-card cyan">ℹ️ Se creará como borrador. Luego pulsa "🚀 Emitir" para firmarla y enviarla al SRI.</div>
+
+            <div class="factura-resumen">
+              <div class="factura-resumen-fila">
+                <span>Líneas de detalle</span>
+                <span>{{ facturaLineas().length }}</span>
+              </div>
+              <div class="factura-resumen-fila total">
+                <span>Subtotal estimado (sin IVA)</span>
+                <span>${{ facturaSubtotal() | number:'1.2-2' }}</span>
+              </div>
+            </div>
           }
         </div>
         <div class="modal-footer">
@@ -581,6 +727,57 @@
   }
 
   <!-- MODAL: IMPORTAR COMPROBANTES RECIBIDOS (XML DEL SRI) -->
+  @if (showSriCredencialesModal()) {
+    <div class="modal-backdrop" (click)="closeSriCredencialesModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">🤖 Descarga automática de comprobantes SRI</h3>
+          <button class="btn-close" (click)="closeSriCredencialesModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="notice-card red mb-3">
+            ⚠️ Vas a guardar tu clave real de SRI en Línea. Se cifra con AES-256 antes de guardarse y nunca
+            se muestra de nuevo, pero el sistema la usa para automatizar el portal del SRI (no existe una
+            API oficial de SRI para esto), sin verificación en dos pasos. Guardar la clave NO activa la
+            descarga automática por sí sola: ese interruptor lo prendes aparte, cuando quieras.
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Usuario de SRI en Línea (RUC, cédula o el que uses para entrar)</label>
+            <input class="form-input" [value]="sriUsuarioForm()" (input)="sriUsuarioForm.set($any($event.target).value)" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">C.I. adicional (opcional — solo si entras como tercero autorizado)</label>
+            <input class="form-input" [value]="sriCiAdicionalForm()" (input)="sriCiAdicionalForm.set($any($event.target).value)" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Clave de SRI en Línea</label>
+            <input type="password" class="form-input" [value]="sriClaveForm()" (input)="sriClaveForm.set($any($event.target).value)" autocomplete="new-password" />
+          </div>
+
+          <label class="flex items-start gap-2 mt-2 text-[11px] text-slate-300 cursor-pointer">
+            <input type="checkbox" class="mt-0.5" [checked]="sriConsentimientoAceptado()" (change)="sriConsentimientoAceptado.set($any($event.target).checked)" />
+            <span>Entiendo el riesgo descrito arriba y quiero guardar mi clave del SRI de todas formas.</span>
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeSriCredencialesModal()">Cancelar</button>
+          <button
+            class="btn-save"
+            [disabled]="guardandoSriCredenciales() || !sriUsuarioForm().trim() || !sriClaveForm() || !sriConsentimientoAceptado()"
+            (click)="guardarSriCredenciales()"
+          >
+            {{ guardandoSriCredenciales() ? 'Guardando...' : 'Guardar (cifrada)' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
   @if (showImportComprobantesModal()) {
     <div class="modal-backdrop" (click)="closeImportComprobantesModal()">
       <div class="modal-card" (click)="$event.stopPropagation()">

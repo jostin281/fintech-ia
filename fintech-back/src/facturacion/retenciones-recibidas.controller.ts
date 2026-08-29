@@ -21,11 +21,13 @@ import {
 } from '@nestjs/swagger';
 
 import type { SolicitudAutenticada } from '../auth/interfaces/usuario-autenticado.interface';
+import { BloqueadoEnDemo } from '../auth/decorators/bloqueado-en-demo.decorator';
 import { CrearRetencionRecibidaDto } from './dto/crear-retencion-recibida.dto';
 import { RetencionesRecibidasService } from './retenciones-recibidas.service';
 
 @ApiTags('Facturación - Retenciones recibidas')
 @ApiBearerAuth('access-token')
+@BloqueadoEnDemo()
 @Controller('facturacion/retenciones-recibidas')
 export class RetencionesRecibidasController {
   constructor(

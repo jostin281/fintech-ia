@@ -29,11 +29,19 @@ import {
 } from '@nestjs/swagger';
 
 import type { SolicitudAutenticada } from '../auth/interfaces/usuario-autenticado.interface';
+import { BloqueadoEnDemo } from '../auth/decorators/bloqueado-en-demo.decorator';
 import { ActualizarFacturaDto } from './dto/actualizar-factura.dto';
 import { CrearFacturaDto } from './dto/crear-factura.dto';
+import { EnviarFacturaCorreoDto } from './dto/enviar-factura-correo.dto';
 import { FiltrarFacturasDto } from './dto/filtrar-facturas.dto';
 import { FacturasService } from './facturas.service';
 
+// Nota sobre el modo demo: este controlador NO está bloqueado por completo
+// (a diferencia de firma-electronica, sri-credenciales, comprobantes-recibidos
+// y rdep). Una cuenta demo puede crear, ver y "emitir" facturas para conocer
+// la función — pero @Post(':id/emitir') simula la autorización en vez de
+// firmar con un certificado real y enviarla al SRI real, y consultar-sri /
+// reenviar-sri (que sí tocan al SRI real) quedan bloqueados abajo.
 @ApiTags('Facturación - Facturas electrónicas')
 @ApiBearerAuth('access-token')
 @Controller('facturacion/facturas')
@@ -138,6 +146,13 @@ export class FacturasController {
     @Req() solicitud: SolicitudAutenticada,
     @Param('id', ParseIntPipe) facturaId: number,
   ) {
+    // Cuenta demo: emisión simulada, sin firma real ni conexión al SRI real.
+    if (solicitud.usuario.esDemo) {
+      return this.facturasService.emitirSimulado(
+        solicitud.usuario.sub,
+        facturaId,
+      );
+    }
     return this.facturasService.emitir(solicitud.usuario.sub, facturaId);
   }
 
@@ -149,6 +164,7 @@ export class FacturasController {
   @ApiParam({ name: 'id', type: Number, example: 1 })
   @ApiOkResponse({ description: 'Estado actualizado desde el SRI' })
   @ApiServiceUnavailableResponse({ description: 'El SRI no está disponible' })
+  @BloqueadoEnDemo()
   consultarSri(
     @Req() solicitud: SolicitudAutenticada,
     @Param('id', ParseIntPipe) facturaId: number,
@@ -167,11 +183,37 @@ export class FacturasController {
     description: 'La factura no se encuentra en estado FIRMADA',
   })
   @ApiServiceUnavailableResponse({ description: 'El SRI no está disponible' })
+  @BloqueadoEnDemo()
   reenviarSri(
     @Req() solicitud: SolicitudAutenticada,
     @Param('id', ParseIntPipe) facturaId: number,
   ) {
     return this.facturasService.reenviarSri(solicitud.usuario.sub, facturaId);
+  }
+
+  @Post(':id/enviar-correo')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Enviar el RIDE de una factura emitida por correo al cliente',
+  })
+  @ApiParam({ name: 'id', type: Number, example: 1 })
+  @ApiOkResponse({ description: 'Correo enviado correctamente' })
+  @ApiBadRequestResponse({ description: 'Falta un correo de destino' })
+  @ApiConflictResponse({ description: 'La factura todavía es un borrador' })
+  @ApiServiceUnavailableResponse({
+    description: 'El envío de correo no está configurado o falló',
+  })
+  @BloqueadoEnDemo()
+  enviarPorCorreo(
+    @Req() solicitud: SolicitudAutenticada,
+    @Param('id', ParseIntPipe) facturaId: number,
+    @Body() enviarFacturaCorreoDto: EnviarFacturaCorreoDto,
+  ) {
+    return this.facturasService.enviarPorCorreo(
+      solicitud.usuario.sub,
+      facturaId,
+      enviarFacturaCorreoDto.correo,
+    );
   }
 
   @Get(':id/xml')

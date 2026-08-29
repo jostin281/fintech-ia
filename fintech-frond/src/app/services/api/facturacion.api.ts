@@ -152,6 +152,7 @@ export interface ClienteFacturacionApi {
   tipoIdentificacion: TipoIdentificacionSriApi;
   identificacion: string;
   razonSocial: string;
+  nombreComercial: string | null;
   correo: string | null;
   direccion: string | null;
   telefono: string | null;
@@ -162,9 +163,17 @@ export interface CrearClienteApi {
   tipoIdentificacion: TipoIdentificacionSriApi;
   identificacion: string;
   razonSocial: string;
+  nombreComercial?: string;
   correo?: string;
   direccion?: string;
   telefono?: string;
+}
+
+export interface ConsultaRucApi {
+  disponible: boolean;
+  razonSocial?: string;
+  estado?: string | null;
+  motivo?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -188,6 +197,13 @@ export class ClientesFacturacionApiService {
 
   async eliminar(id: number): Promise<void> {
     await firstValueFrom(this.http.delete(`${this.base}/${id}`));
+  }
+
+  /** Autocompleta la razón social de un cliente a partir de su RUC (13 dígitos) consultando el padrón del SRI. */
+  async consultarRuc(ruc: string): Promise<ConsultaRucApi> {
+    return firstValueFrom(
+      this.http.get<ConsultaRucApi>(`${this.base}/consultar-ruc/${ruc}`),
+    );
   }
 }
 
@@ -353,6 +369,13 @@ export class FacturasApiService {
 
   async descargarRide(id: number): Promise<Blob> {
     return firstValueFrom(this.http.get(`${this.base}/${id}/ride`, { responseType: 'blob' }));
+  }
+
+  /** Envía el RIDE (PDF) por correo al cliente. Si no se indica `correo`, usa el correo ya guardado del cliente. */
+  async enviarPorCorreo(id: number, correo?: string): Promise<{ mensaje: string; correo: string }> {
+    return firstValueFrom(
+      this.http.post<{ mensaje: string; correo: string }>(`${this.base}/${id}/enviar-correo`, correo ? { correo } : {}),
+    );
   }
 }
 

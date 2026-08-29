@@ -5,6 +5,9 @@ export interface UsuarioAutenticado {
   sub: number;
   correo: string;
   rol: 'USUARIO' | 'ADMINISTRADOR';
+  // Verdadero cuando el token pertenece a una sesión demo temporal
+  // (ver DemoService). Los guards lo usan para bloquear funciones sensibles.
+  esDemo?: boolean;
   iat?: number;
   exp?: number;
 }

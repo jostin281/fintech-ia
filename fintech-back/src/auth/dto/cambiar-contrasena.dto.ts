@@ -7,8 +7,8 @@ export class CambiarContrasenaDto {
   @IsNotEmpty({ message: 'La contraseña actual es obligatoria' })
   contrasenaActual!: string;
 
-  @ApiProperty({ description: 'Nueva contraseña (mínimo 6 caracteres)' })
+  @ApiProperty({ description: 'Nueva contraseña (mínimo 11 caracteres, para que sea una contraseña fuerte)' })
   @IsString({ message: 'La nueva contraseña debe ser texto' })
-  @MinLength(6, { message: 'La nueva contraseña debe contener al menos 6 caracteres' })
+  @MinLength(11, { message: 'La nueva contraseña debe contener al menos 11 caracteres para ser una contraseña fuerte' })
   nuevaContrasena!: string;
 }

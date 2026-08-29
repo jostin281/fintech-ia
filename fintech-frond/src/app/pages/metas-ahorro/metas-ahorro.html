@@ -266,14 +266,12 @@
     <div class="floating-tip-card">
       <div class="tip-header">
         <div class="flex items-center gap-2">
-          <span class="tip-icon">🎯</span>
-          <span class="tip-title">Hack de Ahorro IA</span>
+          <span class="tip-icon">{{ tips.tipMetas().icon }}</span>
+          <span class="tip-title">{{ tips.tipMetas().title }}</span>
         </div>
         <button class="btn-close-tip" (click)="showTipWidget.set(false)" title="Cerrar consejo">✕</button>
       </div>
-      <p class="tip-body">
-        <strong>Regla de las 48 Horas:</strong> Antes de una compra no planificada mayor a $100 USD, espera 48h. El 70% de los impulsos se desvanecen y se convierten en abono para tus metas.
-      </p>
+      <p class="tip-body" [innerHTML]="tips.tipMetas().body"></p>
     </div>
   }
 

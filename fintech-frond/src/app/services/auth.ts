@@ -25,6 +25,11 @@ interface RespuestaLogin {
   usuario: { id: number; nombre: string; correo: string; rol: 'USUARIO' | 'ADMINISTRADOR'; activo: boolean };
 }
 
+interface RespuestaDemo extends RespuestaLogin {
+  esDemo: true;
+  demoExpiraEn: string;
+}
+
 interface RespuestaRegistro {
   mensaje: string;
   usuario: { id: number; nombre: string; correo: string; rol: 'USUARIO' | 'ADMINISTRADOR'; activo: boolean };
@@ -33,6 +38,7 @@ interface RespuestaRegistro {
 const TOKEN_KEY = 'fintech_access_token';
 const SESSION_KEY = 'fintech_session';
 const REMEMBER_EMAIL_KEY = 'fintech_remember_email';
+const DEMO_EXPIRA_KEY = 'fintech_demo_expira';
 
 /**
  * Servicio de autenticación conectado al backend real (NestJS) en
@@ -50,6 +56,17 @@ export class AuthService {
   private readonly _currentUser = signal<AuthUser | null>(null);
   readonly currentUser = this._currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this._currentUser() !== null);
+
+  /** Verdadero mientras la sesión activa es la demo temporal (botón "Usar demo"). */
+  private readonly _isDemo = signal(false);
+  readonly isDemo = this._isDemo.asReadonly();
+
+  /** Se pone en true cuando la demo llega a su límite de tiempo; la app
+   *  raíz (app.ts) muestra la pantalla de "crea tu cuenta gratis" cuando esto ocurre. */
+  private readonly _demoSessionEnded = signal(false);
+  readonly demoSessionEnded = this._demoSessionEnded.asReadonly();
+
+  private demoTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     if (this.isBrowser) {
@@ -101,6 +118,36 @@ export class AuthService {
     }
   }
 
+  /**
+   * Inicia una sesión demo temporal: no pide credenciales, crea una cuenta
+   * desechable en el backend con datos de ejemplo y arma el temporizador
+   * que muestra la pantalla de "crea tu cuenta gratis" al terminarse.
+   */
+  async loginDemo(): Promise<AuthResult> {
+    try {
+      const respuesta = await firstValueFrom(
+        this.http.post<RespuestaDemo>(`${API_BASE_URL}/auth/demo`, {}),
+      );
+
+      const authUser: AuthUser = {
+        id: respuesta.usuario.id,
+        name: respuesta.usuario.nombre,
+        email: respuesta.usuario.correo,
+        role: respuesta.usuario.rol,
+      };
+
+      // Una demo nunca se "recuerda": vive solo en esta pestaña/sesión.
+      this.setSession(authUser, respuesta.accessToken, false);
+      this._isDemo.set(true);
+      this._demoSessionEnded.set(false);
+      this.programarFinDemo(respuesta.demoExpiraEn);
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: mensajeDeError(error, 'No se pudo iniciar la demo.') };
+    }
+  }
+
   async register(name: string, email: string, password: string): Promise<AuthResult> {
     try {
       await firstValueFrom(
@@ -147,11 +194,18 @@ export class AuthService {
 
   logout(): void {
     this._currentUser.set(null);
+    this._isDemo.set(false);
+    this._demoSessionEnded.set(false);
+    if (this.demoTimeoutId) {
+      clearTimeout(this.demoTimeoutId);
+      this.demoTimeoutId = null;
+    }
     if (this.isBrowser) {
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(TOKEN_KEY);
       sessionStorage.removeItem(SESSION_KEY);
       sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(DEMO_EXPIRA_KEY);
     }
   }
 
@@ -196,6 +250,38 @@ export class AuthService {
     } catch {
       localStorage.removeItem(SESSION_KEY);
       sessionStorage.removeItem(SESSION_KEY);
+      return;
     }
+
+    // Si la sesión restaurada era una demo, vuelve a armar el temporizador
+    // (o marca la demo como terminada de inmediato si ya venció).
+    const demoExpiraIso = sessionStorage.getItem(DEMO_EXPIRA_KEY);
+    if (demoExpiraIso) {
+      this._isDemo.set(true);
+      this.armarTemporizadorDemo(new Date(demoExpiraIso));
+    }
+  }
+
+  /** Guarda la hora de fin de la demo y arranca el temporizador local. */
+  private programarFinDemo(demoExpiraEnIso: string): void {
+    if (this.isBrowser) {
+      sessionStorage.setItem(DEMO_EXPIRA_KEY, demoExpiraEnIso);
+    }
+    this.armarTemporizadorDemo(new Date(demoExpiraEnIso));
+  }
+
+  private armarTemporizadorDemo(expiraEn: Date): void {
+    if (!this.isBrowser) return;
+    if (this.demoTimeoutId) {
+      clearTimeout(this.demoTimeoutId);
+      this.demoTimeoutId = null;
+    }
+
+    const msRestantes = expiraEn.getTime() - Date.now();
+    if (msRestantes <= 0) {
+      this._demoSessionEnded.set(true);
+      return;
+    }
+    this.demoTimeoutId = setTimeout(() => this._demoSessionEnded.set(true), msRestantes);
   }
 }

@@ -10,6 +10,7 @@ import { FacturasController } from './facturas.controller';
 import { FacturasService } from './facturas.service';
 import { FirmaElectronicaController } from './firma-electronica.controller';
 import { FirmaElectronicaService } from './firma-electronica.service';
+import { MailerService } from '../notificaciones/mailer.service';
 import { PerfilTributarioController } from './perfil-tributario.controller';
 import { PerfilTributarioService } from './perfil-tributario.service';
 import { ProductosServiciosController } from './productos-servicios.controller';
@@ -34,6 +35,7 @@ import { RetencionesRecibidasService } from './retenciones-recibidas.service';
     PerfilTributarioService,
     ConsultaRucSriService,
     FirmaElectronicaService,
+    MailerService,
     ClientesFacturacionService,
     ProductosServiciosService,
     FacturasService,

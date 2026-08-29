@@ -12,9 +12,11 @@
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="logo">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        </div>
+        <img
+          src="/logo-fintechia-icon.png?v=2"
+          alt="FintechIA logo oficial"
+          class="h-12 w-auto rounded-lg drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]"
+        />
         <div class="flex flex-col">
           <span class="logo-text">Fintech<span class="text-cyan-400">AI</span></span>
           <span class="text-[10px] text-cyan-400/70 font-semibold tracking-wider uppercase">Plataforma Pro</span>
@@ -473,14 +475,12 @@
     <div class="floating-tip-card">
       <div class="tip-header">
         <div class="flex items-center gap-2">
-          <span class="tip-icon">💡</span>
-          <span class="tip-title">Consejo de Ahorro 50/30/20</span>
+          <span class="tip-icon">{{ tips.tipDashboard().icon }}</span>
+          <span class="tip-title">{{ tips.tipDashboard().title }}</span>
         </div>
         <button class="btn-close-tip" (click)="showTipWidget.set(false)" title="Cerrar consejo">✕</button>
       </div>
-      <p class="tip-body">
-        <strong>Fórmula de Éxito:</strong> Destina el 50% de tus ingresos a necesidades básicas, 30% a estilo de vida y el 20% obligatoriamente a tu fondo de ahorro o inversión.
-      </p>
+      <p class="tip-body" [innerHTML]="tips.tipDashboard().body"></p>
     </div>
   }
 

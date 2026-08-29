@@ -251,6 +251,76 @@ select.form-input option { background: #0f172a; color: white; }
 .modal-footer { display: flex; gap: .625rem; margin-top: 1.25rem; }
 .btn-cancel { flex: 1; padding: .55rem; border-radius: .625rem; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: #94a3b8; font-size: .8rem; font-weight: 600; cursor: pointer; }
 .btn-save { flex: 1.2; padding: .55rem; border-radius: .625rem; background: linear-gradient(135deg, #06b6d4, #8b5cf6); border: none; color: white; font-size: .8rem; font-weight: 700; cursor: pointer; box-shadow: 0 0 15px rgba(6,182,212,.3); }
+.btn-save:disabled, .btn-cancel:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Modal ancho para formularios con varias columnas (ej. Nueva Factura) */
+.modal-card-wide { max-width: 660px; }
+.modal-subtitle { font-size: .72rem; color: #64748b; margin: .15rem 0 0; }
+
+/* Separadores de sección dentro de un modal */
+.modal-section-label {
+  display: flex; align-items: center; gap: .5rem;
+  font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  color: #22d3ee; margin: .4rem 0 -.35rem;
+}
+.modal-section-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(6,182,212,.35), transparent); }
+
+/* Líneas de detalle de la factura */
+.factura-lineas { display: flex; flex-direction: column; gap: .5rem; }
+.factura-linea-header {
+  display: grid; grid-template-columns: 22px minmax(0,1fr) 90px 100px 28px;
+  gap: .5rem; padding: 0 .1rem;
+  font-size: .65rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: #64748b;
+}
+.factura-linea {
+  display: grid; grid-template-columns: 22px minmax(0,1fr) 90px 100px 28px;
+  gap: .5rem; align-items: center;
+  background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.08);
+  border-radius: .75rem; padding: .5rem .6rem;
+  transition: border-color .2s, background .2s;
+}
+.factura-linea:hover { border-color: rgba(6,182,212,.3); background: rgba(255,255,255,.035); }
+.factura-linea .form-input { padding: .45rem .6rem; font-size: .78rem; }
+.factura-linea-numero {
+  width: 20px; height: 20px; border-radius: 999px; background: rgba(6,182,212,.15);
+  color: #22d3ee; font-size: .62rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.btn-quitar-linea {
+  width: 26px; height: 26px; border-radius: 999px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: #64748b;
+  font-size: .7rem; cursor: pointer; transition: all .2s;
+}
+.btn-quitar-linea:hover:not(:disabled) { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.4); color: #fca5a5; }
+.btn-quitar-linea:disabled { opacity: .35; cursor: not-allowed; }
+
+.btn-agregar-linea {
+  display: flex; align-items: center; justify-content: center; gap: .4rem;
+  padding: .55rem; border-radius: .75rem; border: 1px dashed rgba(6,182,212,.4);
+  background: rgba(6,182,212,.04); color: #67e8f9; font-size: .78rem; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+}
+.btn-agregar-linea:hover { background: rgba(6,182,212,.1); border-color: rgba(6,182,212,.6); }
+
+/* Resumen de totales dentro del modal de factura */
+.factura-resumen {
+  background: rgba(6,182,212,.06); border: 1px solid rgba(6,182,212,.2); border-radius: .875rem;
+  padding: .8rem 1rem; display: flex; flex-direction: column; gap: .3rem;
+}
+.factura-resumen-fila { display: flex; justify-content: space-between; font-size: .78rem; color: #94a3b8; }
+.factura-resumen-fila.total {
+  font-size: .95rem; font-weight: 800; color: white; padding-top: .45rem;
+  border-top: 1px solid rgba(255,255,255,.08); margin-top: .1rem;
+}
+.factura-resumen-fila.total span:last-child { color: #22d3ee; }
+
+@media (max-width: 640px) {
+  .factura-linea-header { display: none; }
+  .factura-linea { display: flex; flex-wrap: wrap; }
+  .factura-linea select.form-input { flex: 1 1 100%; }
+  .factura-linea input.form-input { flex: 1 1 calc(50% - .5rem); }
+}
 
 /* ── Toast ── */
 .toast-notification {

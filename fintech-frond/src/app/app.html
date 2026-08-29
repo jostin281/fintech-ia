@@ -1,1 +1,19 @@
 <router-outlet />
+
+@if (auth.demoSessionEnded()) {
+  <div class="demo-overlay" role="dialog" aria-modal="true">
+    <div class="demo-card">
+      <div class="demo-icon">
+        <img src="/logo-fintechia-icon.png?v=2" alt="FintechIA" class="demo-logo" />
+      </div>
+      <h2>Tu demo terminó</h2>
+      <p>
+        Esto fue solo una vista rápida con datos de ejemplo: nada de lo que hiciste se guardó.
+        Crea una cuenta gratis para seguir usando FintechAI con tus propios datos.
+      </p>
+      <button type="button" class="demo-cta" (click)="crearCuentaGratis()">
+        Crear cuenta gratis
+      </button>
+    </div>
+  </div>
+}

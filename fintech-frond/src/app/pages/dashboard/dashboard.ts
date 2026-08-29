@@ -35,6 +35,7 @@ interface SavingGoal {
 
 import { UserDataService } from '../../services/user-data';
 import { BankingService } from '../../services/banking';
+import { TipsService } from '../../services/tips';
 
 @Component({
   selector: 'app-dashboard',
@@ -47,6 +48,7 @@ export class Dashboard implements AfterViewInit, OnDestroy {
 
   protected readonly auth = inject(AuthService);
   protected readonly userData = inject(UserDataService);
+  protected readonly tips = inject(TipsService);
   private readonly banking = inject(BankingService);
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);

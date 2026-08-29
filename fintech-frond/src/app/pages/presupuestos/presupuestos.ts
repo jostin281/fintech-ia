@@ -13,6 +13,7 @@ import { isPlatformBrowser, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { UserDataService, estaEnMesRelativo } from '../../services/user-data';
+import { TipsService } from '../../services/tips';
 import { mensajeDeError } from '../../services/http-error';
 
 export interface Budget {
@@ -34,6 +35,7 @@ export class Presupuestos implements AfterViewInit, OnDestroy {
   @ViewChild('neuralCanvas') private canvasRef?: ElementRef<HTMLCanvasElement>;
 
   protected readonly userData = inject(UserDataService);
+  protected readonly tips = inject(TipsService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 

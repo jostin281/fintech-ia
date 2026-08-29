@@ -28,6 +28,7 @@ import {
 } from '@nestjs/swagger';
 
 import type { SolicitudAutenticada } from '../auth/interfaces/usuario-autenticado.interface';
+import { BloqueadoEnDemo } from '../auth/decorators/bloqueado-en-demo.decorator';
 import { ComprobantesRecibidosService } from './comprobantes-recibidos.service';
 import { ActualizarCategoriaDetalleDto } from './dto/actualizar-categoria-detalle.dto';
 import { FiltrarComprobantesRecibidosDto } from './dto/filtrar-comprobantes-recibidos.dto';
@@ -35,6 +36,7 @@ import type { ArchivoComprobanteSubido } from './interfaces/archivo-subido.inter
 
 @ApiTags('Comprobantes recibidos')
 @ApiBearerAuth('access-token')
+@BloqueadoEnDemo()
 @Controller('comprobantes-recibidos')
 export class ComprobantesRecibidosController {
   constructor(

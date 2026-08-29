@@ -105,8 +105,8 @@ export const ES_EN_DICTIONARY: Record<string, string> = {
   'Inteligencia Artificial': 'Artificial Intelligence',
   'Optimizando Flujos IA...': 'Optimizing AI Flows...',
   '¡Modelo Sincronizado!': 'Model Synced!',
-  'Optimiza tu presupuesto, predice tu flujo de caja y toma decisiones financieras estratégicas respaldadas por modelos de aprendizaje profundo en tiempo real.':
-    'Optimize your budget, predict your cash flow, and make strategic financial decisions backed by real-time deep learning models.',
+  'Controla tu presupuesto, tus metas de ahorro y tus reportes financieros, con un asistente de IA que analiza tus propios datos para ayudarte a decidir.':
+    'Control your budget, savings goals, and financial reports, with an AI assistant that analyzes your own data to help you decide.',
 
   // ── Login ─────────────────────────────────────────────────────────────
   'Iniciar Sesión': 'Sign In',
@@ -155,7 +155,7 @@ export const ES_EN_DICTIONARY: Record<string, string> = {
   'Mínimo 2 caracteres.': 'Minimum 2 characters.',
   'Tu nombre completo': 'Your full name',
   'Correo inválido.': 'Invalid email.',
-  'Mínimo 6 caracteres': 'Minimum 6 characters',
+  'Mínimo 11 caracteres': 'Minimum 11 characters',
   Débil: 'Weak',
   Regular: 'Fair',
   Buena: 'Good',

@@ -11,6 +11,7 @@ import {
   CrearClienteDto,
   type TipoIdentificacionSriDto,
 } from './dto/crear-cliente.dto';
+import { ConsultaRucSriService } from './consulta-ruc-sri.service';
 import {
   esCedulaEcuadorValida,
   esRucEcuadorValido,
@@ -18,7 +19,10 @@ import {
 
 @Injectable()
 export class ClientesFacturacionService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly consultaRucSriService: ConsultaRucSriService,
+  ) {}
 
   async crear(usuarioId: number, crearClienteDto: CrearClienteDto) {
     const perfil = await this.obtenerPerfil(usuarioId);
@@ -50,6 +54,7 @@ export class ClientesFacturacionService {
         data: {
           tipoIdentificacion: crearClienteDto.tipoIdentificacion,
           razonSocial: crearClienteDto.razonSocial,
+          nombreComercial: crearClienteDto.nombreComercial,
           correo: crearClienteDto.correo,
           direccion: crearClienteDto.direccion,
           telefono: crearClienteDto.telefono,
@@ -214,6 +219,40 @@ export class ClientesFacturacionService {
         'Consumidor final debe usar identificación 9999999999999 y razón social CONSUMIDOR FINAL',
       );
     }
+  }
+
+  /**
+   * Autocompleta la razón social de un cliente a partir de su RUC,
+   * consultando el padrón público del SRI (mismo servicio que ya se usa
+   * para validar el RUC del propio perfil tributario). Solo funciona con
+   * RUC (13 dígitos): la cédula no tiene un padrón público equivalente en
+   * Ecuador, así que para CEDULA el usuario debe escribir el nombre a mano.
+   */
+  async consultarRuc(ruc: string) {
+    if (!esRucEcuadorValido(ruc)) {
+      throw new BadRequestException(
+        'El RUC no tiene un formato o dígito verificador válido',
+      );
+    }
+
+    const resultado = await this.consultaRucSriService.consultar(ruc);
+
+    if (resultado.tipo === 'NO_EXISTE') {
+      throw new NotFoundException('El RUC no está registrado en el SRI');
+    }
+
+    if (resultado.tipo === 'SERVICIO_NO_DISPONIBLE') {
+      return {
+        disponible: false,
+        motivo: resultado.motivo,
+      };
+    }
+
+    return {
+      disponible: true,
+      razonSocial: resultado.info.razonSocial,
+      estado: resultado.info.estado,
+    };
   }
 
   private async obtenerPerfil(usuarioId: number) {

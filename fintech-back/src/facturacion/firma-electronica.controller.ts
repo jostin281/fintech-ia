@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 
 import type { SolicitudAutenticada } from '../auth/interfaces/usuario-autenticado.interface';
+import { BloqueadoEnDemo } from '../auth/decorators/bloqueado-en-demo.decorator';
 import { CargarFirmaElectronicaDto } from './dto/cargar-firma-electronica.dto';
 import {
   FirmaElectronicaService,
@@ -30,6 +31,7 @@ import {
 
 @ApiTags('Facturación - Firma electrónica')
 @ApiBearerAuth('access-token')
+@BloqueadoEnDemo()
 @Controller('facturacion/firma-electronica')
 export class FirmaElectronicaController {
   constructor(

@@ -14,6 +14,7 @@ import { RouterLink } from '@angular/router';
 
 import { ReportesApiService, type ResultadoReporteApi, type TipoReporteApi } from '../../services/api/reportes.api';
 import { mensajeDeError } from '../../services/http-error';
+import { TipsService } from '../../services/tips';
 
 export interface CategoryBreakdown {
   name: string;
@@ -71,6 +72,7 @@ export class Reportes implements AfterViewInit, OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private readonly reportesApi = inject(ReportesApiService);
+  protected readonly tips = inject(TipsService);
 
   private animationFrameId?: number;
   private resizeHandler?: () => void;

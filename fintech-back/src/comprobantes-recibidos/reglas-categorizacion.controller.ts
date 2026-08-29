@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 
 import type { SolicitudAutenticada } from '../auth/interfaces/usuario-autenticado.interface';
+import { BloqueadoEnDemo } from '../auth/decorators/bloqueado-en-demo.decorator';
 import { ActualizarReglaCategorizacionDto } from './dto/actualizar-regla-categorizacion.dto';
 import { CrearReglaCategorizacionDto } from './dto/crear-regla-categorizacion.dto';
 import { FiltrarReglasCategorizacionDto } from './dto/filtrar-reglas-categorizacion.dto';
@@ -29,6 +30,7 @@ import { ReglasCategorizacionService } from './reglas-categorizacion.service';
 
 @ApiTags('Comprobantes recibidos - Reglas de categorización')
 @ApiBearerAuth('access-token')
+@BloqueadoEnDemo()
 @Controller('comprobantes-recibidos/reglas')
 export class ReglasCategorizacionController {
   constructor(

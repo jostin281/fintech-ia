@@ -282,14 +282,12 @@
     <div class="floating-tip-card">
       <div class="tip-header">
         <div class="flex items-center gap-2">
-          <span class="tip-icon">💡</span>
-          <span class="tip-title">Consejo de Ahorro IA</span>
+          <span class="tip-icon">{{ tips.tipPresupuestos().icon }}</span>
+          <span class="tip-title">{{ tips.tipPresupuestos().title }}</span>
         </div>
         <button class="btn-close-tip" (click)="showTipWidget.set(false)" title="Cerrar consejo">✕</button>
       </div>
-      <p class="tip-body">
-        <strong>Regla del Micro-Ahorro:</strong> Redondear tus compras al dólar más cercano genera un excedente de $420 USD al año sin afectar tu estilo de vida.
-      </p>
+      <p class="tip-body" [innerHTML]="tips.tipPresupuestos().body"></p>
     </div>
   }
 

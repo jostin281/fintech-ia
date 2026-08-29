@@ -239,14 +239,12 @@
     <div class="floating-tip-card">
       <div class="tip-header">
         <div class="flex items-center gap-2">
-          <span class="tip-icon">📊</span>
-          <span class="tip-title">Hack de Analítica IA</span>
+          <span class="tip-icon">{{ tips.tipReportes().icon }}</span>
+          <span class="tip-title">{{ tips.tipReportes().title }}</span>
         </div>
         <button class="btn-close-tip" (click)="showTipWidget.set(false)" title="Cerrar consejo">✕</button>
       </div>
-      <p class="tip-body">
-        <strong>Previsión de Liquidez:</strong> Compara el ingreso del trimestre contra tus egresos fijos para prever períodos de alta liquidez y realizar abonos extraordinarios a tus metas.
-      </p>
+      <p class="tip-body" [innerHTML]="tips.tipReportes().body"></p>
     </div>
   }
 

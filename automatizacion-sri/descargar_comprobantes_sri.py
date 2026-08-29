@@ -49,6 +49,11 @@ SRI_COMPROBANTES_URL = (
 
 # Múltiples candidatos de URL para comprobantes recibidos (el portal SRI
 # cambia sus rutas periódicamente — se prueban en orden hasta encontrar una).
+# A diferencia del login (ya verificado arriba), estas URLs y los
+# selectores de SELECTORES_XML más abajo SIGUEN SIN CONFIRMAR contra el
+# portal real: no fue posible probarlos sin iniciar sesión con una cuenta
+# real. Corre este script con --debug y una cuenta real para confirmarlos
+# o corregirlos.
 SRI_COMPROBANTES_URLS_CANDIDATOS = [
     "https://srienlinea.sri.gob.ec/comprobantes-electronicos-internet/pages/consultas/recibidosConsultas.jsf",
     "https://srienlinea.sri.gob.ec/sri-en-linea/SriComprobantesElectronicosInternet/ConsultaComprobantesRecibidos/Consultas/consultaComprobantesRecibidos",
@@ -60,33 +65,35 @@ API_BASE_URL = "http://localhost:3001/api"
 # Selectores del portal SRI en Línea (JSF). Se prueban en orden; el primero
 # que encuentre el elemento es el que se usa. Si todos fallan con --debug,
 # inspecciona el HTML real y actualiza el primer elemento de cada lista.
+# Verificados el 2026-08-28 inspeccionando el DOM real de
+# https://srienlinea.sri.gob.ec. El portal hoy corre el login sobre
+# Keycloak/OIDC, NO sobre el portal JSF viejo que asumía la primera
+# versión de este script (por eso los selectores originales casi seguro
+# no funcionaban). El primero de cada lista es el confirmado; los demás
+# quedan de respaldo por si el SRI vuelve a cambiar el portal.
 SELECTORES_USUARIO = [
-    "#txtUsuario",
-    "input[name='txtUsuario']",
+    "#usuario",
+    "input[name='usuario']",
     "input[id*='usuario']",
-    "input[placeholder*='usuario']",
-    "input[placeholder*='Usuario']",
     "input[type='text']:first-of-type",
 ]
 
+# Campo opcional "C.I. adicional" (para entrar como tercero autorizado
+# sobre el RUC de otra persona/empresa). Este script no lo llena: asume
+# que entras a tu propia cuenta con tu propio RUC/C.I.
+SELECTOR_CI_ADICIONAL = "#ciAdicional"
+
 SELECTORES_CLAVE = [
-    "#txtPassword",
-    "input[name='txtPassword']",
+    "#password",
+    "input[name='password']",
     "input[id*='password']",
-    "input[id*='Password']",
-    "input[placeholder*='contraseña']",
-    "input[placeholder*='Contraseña']",
     "input[type='password']",
 ]
 
 SELECTORES_BTN_LOGIN = [
-    "#btnLogin",
-    "button[id*='login']",
-    "button[id*='Login']",
-    "input[type='submit'][value*='Ingres']",
+    "#kc-login",
+    "input[type='submit']",
     "button[type='submit']",
-    ".btn-login",
-    "a[id*='login']",
 ]
 
 SELECTORES_XML = [
@@ -123,6 +130,9 @@ def cargar_credenciales() -> dict:
     faltantes = [c for c, v in valores.items() if not v]
     if faltantes:
         sys.exit(f"Faltan valores en credenciales.env: {', '.join(faltantes)}")
+    # Opcional: campo "C.I. adicional" del login del SRI (login como
+    # tercero autorizado). No es obligatorio, se deja vacío si no está.
+    valores["SRI_CI_ADICIONAL"] = os.getenv("SRI_CI_ADICIONAL") or ""
     return valores
 
 
@@ -139,7 +149,7 @@ def encontrar_elemento(pagina, selectores: list[str], descripcion: str, timeout:
     return None
 
 
-def descargar_xml_sri(usuario: str, clave: str, debug: bool) -> list[Path]:
+def descargar_xml_sri(usuario: str, clave: str, ci_adicional: str, debug: bool) -> list[Path]:
     """
     Inicia sesión en SRI en Línea y descarga los XML de comprobantes
     electrónicos recibidos disponibles.
@@ -182,6 +192,13 @@ def descargar_xml_sri(usuario: str, clave: str, debug: bool) -> list[Path]:
 
         campo_usuario.fill(usuario)
         campo_clave.fill(clave)
+
+        if ci_adicional:
+            try:
+                pagina.fill(SELECTOR_CI_ADICIONAL, ci_adicional, timeout=3000)
+                log("Campo 'C.I. adicional' completado.")
+            except PlaywrightTimeoutError:
+                log("No se encontró el campo 'C.I. adicional' (se continúa sin llenarlo).")
 
         btn_login = encontrar_elemento(pagina, SELECTORES_BTN_LOGIN, "botón login", timeout=5000)
         if btn_login:
@@ -377,7 +394,9 @@ def main() -> None:
             archivos = obtener_xmls_pendientes()
             log(f"Modo solo-subir: {len(archivos)} XML(s) encontrados en descargas/")
         else:
-            archivos = descargar_xml_sri(creds["SRI_USUARIO"], creds["SRI_CLAVE"], args.debug)
+            archivos = descargar_xml_sri(
+                creds["SRI_USUARIO"], creds["SRI_CLAVE"], creds["SRI_CI_ADICIONAL"], args.debug
+            )
 
         importar_a_la_app(creds["APP_CORREO"], creds["APP_CONTRASENA"], archivos)
     except Exception as exc:

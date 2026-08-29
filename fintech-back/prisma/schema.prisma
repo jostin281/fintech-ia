@@ -230,6 +230,15 @@ model Usuario {
   // suya; si queda vacía, el asistente usa el motor de reglas local.
   geminiApiKey String? @map("gemini_api_key") @db.VarChar(255)
 
+  // Marca las cuentas creadas por el botón "Usar demo" (temporales, con
+  // datos de ejemplo). Se usan para bloquear funciones sensibles y para
+  // que la limpieza automática sepa qué cuentas puede borrar.
+  esDemo Boolean @default(false) @map("es_demo")
+
+  // Momento en el que expira la sesión demo; una tarea programada borra
+  // la cuenta y sus datos de ejemplo después de esta fecha.
+  demoExpiraEn DateTime? @map("demo_expira_en")
+
   // -----RELACIONES-----
   // Movimientos creados por el usuario.
   movimientos Movimiento[]
@@ -255,6 +264,10 @@ model Usuario {
   // Comprobantes electrónicos recibidos (facturas de compra/gasto) que el
   // usuario importó manualmente.
   comprobantesRecibidos ComprobanteRecibido[]
+
+  // Credenciales cifradas de SRI en Línea, usadas opcionalmente para
+  // descargar automáticamente los comprobantes recibidos del usuario.
+  credencialSri CredencialSri?
 
   // Reglas de categorización personales del usuario (además de las
   // reglas globales administradas por un ADMINISTRADOR).
@@ -661,6 +674,7 @@ model ClienteFacturacion {
   tipoIdentificacion TipoIdentificacionSri @map("tipo_identificacion")
   identificacion     String                @db.VarChar(20)
   razonSocial        String                @map("razon_social") @db.VarChar(300)
+  nombreComercial    String?               @map("nombre_comercial") @db.VarChar(300)
   correo             String?               @db.VarChar(150)
   direccion          String?               @db.VarChar(300)
   telefono           String?               @db.VarChar(30)
@@ -973,6 +987,53 @@ model DetalleComprobanteRecibido {
   @@index([comprobanteRecibidoId])
   @@index([categoriaId])
   @@map("detalles_comprobantes_recibidos")
+}
+
+// ---------- CREDENCIALES DE SRI EN LÍNEA (OPCIONAL, POR USUARIO) ----------
+// Permite que un usuario guarde su usuario/clave de https://srienlinea.sri.gob.ec
+// para que el backend descargue automáticamente sus comprobantes recibidos.
+//
+// IMPORTANTE: esto NO es una API oficial del SRI, es automatización de
+// navegador (RPA) sobre el portal. Es una función optativa, apagada por
+// defecto, que el propio usuario activa asumiendo el riesgo descrito en
+// la interfaz. La clave se cifra con AES-256-GCM (mismo mecanismo que la
+// firma electrónica .p12) y nunca se devuelve en texto plano por la API.
+model CredencialSri {
+  id Int @id @default(autoincrement())
+
+  // Usuario/RUC/cédula de SRI en Línea. No es secreto por sí solo, pero se
+  // guarda junto a la clave cifrada para no depender de un segundo lugar.
+  usuarioSri String @map("usuario_sri") @db.VarChar(50)
+
+  // Campo opcional "C.I. adicional" del login del SRI: se usa cuando la
+  // cuenta se abre como tercero autorizado (por ejemplo, un contador que
+  // entra con su propia cédula a la cuenta de un cliente). Tampoco es
+  // secreto: es una cédula, no una clave.
+  ciAdicionalSri String? @map("ci_adicional_sri") @db.VarChar(50)
+
+  // Clave del SRI cifrada con AES-256-GCM. Nunca se guarda en texto plano.
+  claveCifrada          Bytes @map("clave_cifrada")
+  vectorInicializacion  Bytes @map("vector_inicializacion")
+  etiquetaAutenticacion Bytes @map("etiqueta_autenticacion")
+
+  // Apagado por defecto: el usuario debe activarlo explícitamente para que
+  // el job programado lo incluya. Guardar credenciales no activa la descarga.
+  autoDescargaHabilitada Boolean @default(false) @map("auto_descarga_habilitada")
+
+  // Resultado de la última ejecución (manual o programada), para que el
+  // usuario vea en pantalla si de verdad está funcionando.
+  ultimaEjecucionEn DateTime? @map("ultima_ejecucion_en")
+  ultimoResultado   String?   @map("ultimo_resultado") @db.VarChar(20) // EXITO | ERROR
+  ultimoMensaje     String?   @map("ultimo_mensaje") @db.Text
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // ----- Clave foránea y relación -----
+  usuarioId Int     @unique @map("usuario_id")
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("credenciales_sri")
 }
 
 // ---------- MODELO DE DATOS DE UNA REGLA DE CATEGORIZACIÓN POR PALABRA CLAVE ----------

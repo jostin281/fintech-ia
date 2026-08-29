@@ -113,8 +113,8 @@ export class Perfil implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (nueva.length < 6) {
-      this.mostrarMensajeSeguridad('La nueva contraseña debe tener al menos 6 caracteres.', true);
+    if (nueva.length < 11) {
+      this.mostrarMensajeSeguridad('La nueva contraseña debe tener al menos 11 caracteres para ser una contraseña fuerte.', true);
       return;
     }
 

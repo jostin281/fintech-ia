@@ -28,6 +28,7 @@ import {
   type RetencionRecibidaApi,
   type TipoIdentificacionSriApi,
   type TarifaIvaProductoApi,
+  type ConsultaRucApi,
   type TipoContribuyenteApi,
   type RegimenTributarioApi,
   type TipoIdentificacionPerfilApi,
@@ -37,6 +38,10 @@ import {
   type ComprobanteRecibidoResumenApi,
   type DesgloseComprobanteApi,
 } from '../../services/api/comprobantes-recibidos.api';
+import {
+  SriCredencialesApiService,
+  type EstadoCredencialSriApi,
+} from '../../services/api/sri-credenciales.api';
 import { UserDataService } from '../../services/user-data';
 import { mensajeDeError } from '../../services/http-error';
 
@@ -67,6 +72,7 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
   private readonly facturasApi = inject(FacturasApiService);
   private readonly retencionesApi = inject(RetencionesRecibidasApiService);
   private readonly comprobantesApi = inject(ComprobantesRecibidosApiService);
+  private readonly sriCredencialesApi = inject(SriCredencialesApiService);
   protected readonly userData = inject(UserDataService);
 
   private animationFrameId?: number;
@@ -136,8 +142,12 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
     tipoIdentificacion: 'CEDULA' as TipoIdentificacionSriApi,
     identificacion: '',
     razonSocial: '',
+    nombreComercial: '',
     correo: '',
+    direccion: '',
+    telefono: '',
   });
+  readonly buscandoRuc = signal(false);
 
   readonly showProductoModal = signal(false);
   readonly productoForm = signal({
@@ -149,8 +159,34 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
 
   readonly showFacturaModal = signal(false);
   readonly facturaClienteId = signal<number | null>(null);
-  readonly facturaProductoId = signal<number | null>(null);
-  readonly facturaCantidad = signal('1');
+  readonly facturaFechaEmision = signal(new Date().toISOString().slice(0, 10));
+  readonly facturaFormaPago = signal('20');
+  readonly facturaObservacion = signal('');
+  readonly facturaLineas = signal<
+    Array<{ productoServicioId: number | null; cantidad: string; descuento: string }>
+  >([{ productoServicioId: null, cantidad: '1', descuento: '0' }]);
+
+  readonly FORMAS_PAGO_SRI: Array<{ codigo: string; etiqueta: string }> = [
+    { codigo: '01', etiqueta: 'Sin utilización del sistema financiero (efectivo)' },
+    { codigo: '15', etiqueta: 'Compensación de deudas' },
+    { codigo: '16', etiqueta: 'Tarjeta de débito' },
+    { codigo: '17', etiqueta: 'Dinero electrónico' },
+    { codigo: '18', etiqueta: 'Tarjeta prepago' },
+    { codigo: '19', etiqueta: 'Tarjeta de crédito' },
+    { codigo: '20', etiqueta: 'Otros con utilización del sistema financiero (transferencia)' },
+    { codigo: '21', etiqueta: 'Endoso de títulos' },
+  ];
+
+  readonly facturaSubtotal = computed(() => {
+    const productos = this.productos();
+    return this.facturaLineas().reduce((acc, linea) => {
+      const producto = productos.find((p) => p.id === linea.productoServicioId);
+      if (!producto) return acc;
+      const cantidad = Number(linea.cantidad) || 0;
+      const descuento = Number(linea.descuento) || 0;
+      return acc + cantidad * Number(producto.precioUnitario) - descuento;
+    }, 0);
+  });
 
   readonly showRetencionModal = signal(false);
   readonly retencionForm = signal({
@@ -172,6 +208,17 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
   readonly xmlComprobanteId = signal<number | null>(null);
   readonly xmlContenido = signal<string | null>(null);
   readonly cargandoXml = signal(false);
+
+  /* ── Comprobantes recibidos: descarga automática desde SRI (opcional) ── */
+  readonly sriCredencial = signal<EstadoCredencialSriApi | null>(null);
+  readonly showSriCredencialesModal = signal(false);
+  readonly sriUsuarioForm = signal('');
+  readonly sriCiAdicionalForm = signal('');
+  readonly sriClaveForm = signal('');
+  readonly sriConsentimientoAceptado = signal(false);
+  readonly guardandoSriCredenciales = signal(false);
+  readonly descargandoSriAhora = signal(false);
+  readonly eliminandoSriCredenciales = signal(false);
 
   readonly showDesgloseModal = signal(false);
   readonly desglose = signal<DesgloseComprobanteApi | null>(null);
@@ -212,7 +259,7 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
       const perfil = await this.perfilApi.obtener();
       this.perfil.set(perfil);
 
-      const [firma, clientes, productos, facturas, retenciones, comprobantesRecibidos] =
+      const [firma, clientes, productos, facturas, retenciones, comprobantesRecibidos, sriCredencial] =
         await Promise.all([
           perfil ? this.firmaApi.obtenerEstado() : Promise.resolve(null),
           this.clientesApi.listar().catch(() => []),
@@ -220,6 +267,7 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
           this.facturasApi.listar().catch(() => []),
           this.retencionesApi.listar().catch(() => []),
           this.comprobantesApi.listar().catch(() => []),
+          this.sriCredencialesApi.obtenerEstado().catch(() => null),
         ]);
       this.firma.set(firma);
       this.clientes.set(clientes);
@@ -227,6 +275,7 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
       this.facturas.set(facturas);
       this.retenciones.set(retenciones);
       this.comprobantesRecibidos.set(comprobantesRecibidos);
+      this.sriCredencial.set(sriCredencial);
     } catch (error) {
       this.triggerToast(mensajeDeError(error, 'No se pudo cargar la información de facturación.'));
     } finally {
@@ -365,7 +414,15 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
 
   /* ── Clientes ── */
   openClienteModal() {
-    this.clienteForm.set({ tipoIdentificacion: 'CEDULA', identificacion: '', razonSocial: '', correo: '' });
+    this.clienteForm.set({
+      tipoIdentificacion: 'CEDULA',
+      identificacion: '',
+      razonSocial: '',
+      nombreComercial: '',
+      correo: '',
+      direccion: '',
+      telefono: '',
+    });
     this.showClienteModal.set(true);
   }
 
@@ -390,7 +447,10 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
         tipoIdentificacion: f.tipoIdentificacion,
         identificacion: f.identificacion.trim(),
         razonSocial: f.razonSocial.trim(),
+        nombreComercial: f.nombreComercial.trim() || undefined,
         correo: f.correo.trim() || undefined,
+        direccion: f.direccion.trim() || undefined,
+        telefono: f.telefono.trim() || undefined,
       });
       this.clientes.update((lista) => [cliente, ...lista]);
       this.triggerToast('✅ Cliente registrado.');
@@ -408,6 +468,30 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
       this.clientes.update((lista) => lista.filter((c) => c.id !== id));
     } catch (error) {
       this.triggerToast(mensajeDeError(error, 'No se pudo eliminar el cliente.'));
+    }
+  }
+
+  /** Autocompleta la razón social del cliente a partir del RUC ingresado (solo aplica a RUC, 13 dígitos). */
+  async buscarRucCliente() {
+    const f = this.clienteForm();
+    if (f.tipoIdentificacion !== 'RUC' || !/^\d{13}$/.test(f.identificacion.trim())) {
+      this.triggerToast('Ingresa un RUC válido de 13 dígitos para buscarlo.');
+      return;
+    }
+
+    this.buscandoRuc.set(true);
+    try {
+      const resultado: ConsultaRucApi = await this.clientesApi.consultarRuc(f.identificacion.trim());
+      if (resultado.disponible && resultado.razonSocial) {
+        this.updateClienteForm('razonSocial', resultado.razonSocial);
+        this.triggerToast('✅ Razón social autocompletada desde el SRI.');
+      } else {
+        this.triggerToast(resultado.motivo ?? 'El SRI no devolvió datos para ese RUC en este momento.');
+      }
+    } catch (error) {
+      this.triggerToast(mensajeDeError(error, 'No se pudo consultar el RUC en el SRI.'));
+    } finally {
+      this.buscandoRuc.set(false);
     }
   }
 
@@ -462,8 +546,12 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
   /* ── Facturas ── */
   openFacturaModal() {
     this.facturaClienteId.set(this.clientes()[0]?.id ?? null);
-    this.facturaProductoId.set(this.productos()[0]?.id ?? null);
-    this.facturaCantidad.set('1');
+    this.facturaFechaEmision.set(new Date().toISOString().slice(0, 10));
+    this.facturaFormaPago.set('20');
+    this.facturaObservacion.set('');
+    this.facturaLineas.set([
+      { productoServicioId: this.productos()[0]?.id ?? null, cantidad: '1', descuento: '0' },
+    ]);
     this.showFacturaModal.set(true);
   }
 
@@ -471,11 +559,35 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
     this.showFacturaModal.set(false);
   }
 
+  agregarLineaFactura() {
+    this.facturaLineas.update((lineas) => [
+      ...lineas,
+      { productoServicioId: this.productos()[0]?.id ?? null, cantidad: '1', descuento: '0' },
+    ]);
+  }
+
+  quitarLineaFactura(index: number) {
+    this.facturaLineas.update((lineas) => lineas.filter((_, i) => i !== index));
+  }
+
+  actualizarLineaFactura(index: number, campo: 'productoServicioId' | 'cantidad' | 'descuento', valor: string) {
+    this.facturaLineas.update((lineas) =>
+      lineas.map((linea, i) =>
+        i === index
+          ? { ...linea, [campo]: campo === 'productoServicioId' ? Number(valor) : valor }
+          : linea,
+      ),
+    );
+  }
+
   async crearFactura() {
     const clienteId = this.facturaClienteId();
-    const productoServicioId = this.facturaProductoId();
-    if (!clienteId || !productoServicioId || !this.facturaCantidad().trim()) {
-      this.triggerToast('Selecciona cliente, producto y cantidad.');
+    const lineasValidas = this.facturaLineas().filter(
+      (linea) => linea.productoServicioId && linea.cantidad.trim(),
+    );
+
+    if (!clienteId || lineasValidas.length === 0) {
+      this.triggerToast('Selecciona cliente y al menos una línea de producto con cantidad.');
       return;
     }
 
@@ -483,7 +595,14 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
     try {
       const factura = await this.facturasApi.crear({
         clienteId,
-        detalles: [{ productoServicioId, cantidad: this.facturaCantidad().trim() }],
+        fechaEmision: this.facturaFechaEmision() || undefined,
+        formaPago: this.facturaFormaPago(),
+        observacion: this.facturaObservacion().trim() || undefined,
+        detalles: lineasValidas.map((linea) => ({
+          productoServicioId: linea.productoServicioId!,
+          cantidad: linea.cantidad.trim(),
+          descuento: linea.descuento?.trim() || undefined,
+        })),
       });
       this.facturas.update((lista) => [factura, ...lista]);
       this.triggerToast('✅ Borrador de factura creado. Ya puedes emitirlo al SRI.');
@@ -538,6 +657,20 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
       descargarBlob(blob, `factura-${id}.xml`);
     } catch (error) {
       this.triggerToast(mensajeDeError(error, 'No se pudo descargar el XML.'));
+    }
+  }
+
+  readonly enviandoCorreoId = signal<number | null>(null);
+
+  async enviarCorreoFactura(id: number) {
+    this.enviandoCorreoId.set(id);
+    try {
+      const resultado = await this.facturasApi.enviarPorCorreo(id);
+      this.triggerToast(`✅ ${resultado.mensaje}`);
+    } catch (error) {
+      this.triggerToast(mensajeDeError(error, 'No se pudo enviar la factura por correo.'));
+    } finally {
+      this.enviandoCorreoId.set(null);
     }
   }
 
@@ -626,6 +759,100 @@ export class FacturacionElectronica implements AfterViewInit, OnDestroy {
       this.triggerToast(mensajeDeError(error, 'No se pudo importar los archivos XML.'));
     } finally {
       this.importandoComprobantes.set(false);
+    }
+  }
+
+  /* ── Comprobantes recibidos: descarga automática desde SRI (opcional) ── */
+  openSriCredencialesModal() {
+    this.sriUsuarioForm.set(this.sriCredencial()?.usuarioSri ?? '');
+    this.sriCiAdicionalForm.set(this.sriCredencial()?.ciAdicionalSri ?? '');
+    this.sriClaveForm.set('');
+    this.sriConsentimientoAceptado.set(false);
+    this.showSriCredencialesModal.set(true);
+  }
+
+  closeSriCredencialesModal() {
+    if (this.guardandoSriCredenciales()) return;
+    this.showSriCredencialesModal.set(false);
+  }
+
+  async guardarSriCredenciales() {
+    const usuarioSri = this.sriUsuarioForm().trim();
+    const claveSri = this.sriClaveForm();
+
+    if (!usuarioSri || !claveSri) {
+      this.triggerToast('Ingresa tu usuario y tu clave de SRI en Línea.');
+      return;
+    }
+    if (!this.sriConsentimientoAceptado()) {
+      this.triggerToast('Marca la casilla para confirmar que entiendes el riesgo antes de guardar.');
+      return;
+    }
+
+    this.guardandoSriCredenciales.set(true);
+    try {
+      const estado = await this.sriCredencialesApi.guardar(
+        usuarioSri,
+        claveSri,
+        this.sriCiAdicionalForm().trim() || undefined,
+      );
+      this.sriCredencial.set(estado);
+      this.sriClaveForm.set('');
+      this.triggerToast('✅ Credenciales del SRI guardadas y cifradas. La descarga automática sigue apagada hasta que la actives.');
+      this.showSriCredencialesModal.set(false);
+    } catch (error) {
+      this.triggerToast(mensajeDeError(error, 'No se pudieron guardar las credenciales del SRI.'));
+    } finally {
+      this.guardandoSriCredenciales.set(false);
+    }
+  }
+
+  async toggleAutoDescargaSri() {
+    const actual = this.sriCredencial();
+    if (!actual?.configurado) return;
+
+    try {
+      const estado = await this.sriCredencialesApi.actualizarAutoDescarga(
+        !actual.autoDescargaHabilitada,
+      );
+      this.sriCredencial.set(estado);
+      this.triggerToast(
+        estado.autoDescargaHabilitada
+          ? '✅ Descarga automática activada (se ejecuta una vez al día).'
+          : 'Descarga automática desactivada.',
+      );
+    } catch (error) {
+      this.triggerToast(mensajeDeError(error, 'No se pudo cambiar la descarga automática.'));
+    }
+  }
+
+  async descargarSriAhora() {
+    this.descargandoSriAhora.set(true);
+    try {
+      const resultado = await this.sriCredencialesApi.descargarAhora();
+      this.triggerToast(resultado.exito ? `✅ ${resultado.mensaje}` : `⚠️ ${resultado.mensaje}`, 9000);
+      this.sriCredencial.set(await this.sriCredencialesApi.obtenerEstado());
+      if (resultado.resumenImportacion) {
+        this.comprobantesRecibidos.set(await this.comprobantesApi.listar());
+        void this.userData.cargarTodo();
+      }
+    } catch (error) {
+      this.triggerToast(mensajeDeError(error, 'No se pudo ejecutar la descarga ahora mismo.'));
+    } finally {
+      this.descargandoSriAhora.set(false);
+    }
+  }
+
+  async eliminarSriCredenciales() {
+    this.eliminandoSriCredenciales.set(true);
+    try {
+      await this.sriCredencialesApi.eliminar();
+      this.sriCredencial.set(null);
+      this.triggerToast('Credenciales del SRI eliminadas.');
+    } catch (error) {
+      this.triggerToast(mensajeDeError(error, 'No se pudieron eliminar las credenciales del SRI.'));
+    } finally {
+      this.eliminandoSriCredenciales.set(false);
     }
   }
 

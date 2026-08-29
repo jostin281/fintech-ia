@@ -6,8 +6,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { DemoService } from './demo.service';
+import { DemoLimpiezaService } from './demo-limpieza.service';
 import { AutenticacionGuard } from './guards/autenticacion/autenticacion.guard';
 import { RolesGuard } from './guards/roles/roles.guard';
+import { SinDemoGuard } from './guards/sin-demo/sin-demo.guard';
 
 @Module({
   imports: [
@@ -29,6 +32,8 @@ import { RolesGuard } from './guards/roles/roles.guard';
   controllers: [AuthController],
   providers: [
     AuthService,
+    DemoService,
+    DemoLimpiezaService,
 
     // Primero comprueba el token.
     {
@@ -40,6 +45,14 @@ import { RolesGuard } from './guards/roles/roles.guard';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+
+    // Por último bloquea a las cuentas demo el uso de funciones
+    // marcadas con @BloqueadoEnDemo() (SRI, firma electrónica,
+    // facturación, RDEP).
+    {
+      provide: APP_GUARD,
+      useClass: SinDemoGuard,
     },
   ],
 })

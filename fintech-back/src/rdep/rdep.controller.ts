@@ -29,6 +29,7 @@ import {
 } from '@nestjs/swagger';
 
 import type { SolicitudAutenticada } from '../auth/interfaces/usuario-autenticado.interface';
+import { BloqueadoEnDemo } from '../auth/decorators/bloqueado-en-demo.decorator';
 import { AnexoRdepExcelService } from './anexo-rdep-excel.service';
 import {
   ActualizarFormularioRdepDto,
@@ -51,6 +52,7 @@ import { mapearFormularioRdepCompleto } from './utilidades/rdep-mapeo';
 
 @ApiTags('RDEP / Formulario 107')
 @ApiBearerAuth('access-token')
+@BloqueadoEnDemo()
 @Controller('rdep')
 export class RdepController {
   constructor(

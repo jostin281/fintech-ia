@@ -60,6 +60,18 @@ export class ClientesFacturacionController {
     return this.clientesFacturacionService.listar(solicitud.usuario.sub);
   }
 
+  @Get('consultar-ruc/:ruc')
+  @ApiOperation({
+    summary: 'Autocompletar razón social de un cliente a partir de su RUC',
+  })
+  @ApiParam({ name: 'ruc', type: String, example: '1755555552001' })
+  @ApiOkResponse({ description: 'Resultado de la consulta al padrón del SRI' })
+  @ApiBadRequestResponse({ description: 'El RUC no tiene un formato válido' })
+  @ApiNotFoundResponse({ description: 'El RUC no está registrado en el SRI' })
+  consultarRuc(@Param('ruc') ruc: string) {
+    return this.clientesFacturacionService.consultarRuc(ruc);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Consultar un cliente propio' })
   @ApiParam({ name: 'id', type: Number, example: 1 })

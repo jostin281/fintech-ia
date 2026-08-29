@@ -54,6 +54,15 @@ export class CrearClienteDto {
   @MaxLength(300, { message: 'La razón social admite máximo 300 caracteres' })
   razonSocial!: string;
 
+  @ApiPropertyOptional({ example: 'Ana Pérez Consultora' })
+  @Transform(({ value }) => limpiarTextoOpcional(value))
+  @IsOptional()
+  @IsString({ message: 'El nombre comercial debe ser texto' })
+  @MaxLength(300, {
+    message: 'El nombre comercial admite máximo 300 caracteres',
+  })
+  nombreComercial?: string;
+
   @ApiPropertyOptional({ example: 'ana@example.com' })
   @Transform(({ value }) => limpiarTextoOpcional(value))
   @IsOptional()

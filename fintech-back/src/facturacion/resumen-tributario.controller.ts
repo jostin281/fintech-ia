@@ -23,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 
 import type { SolicitudAutenticada } from '../auth/interfaces/usuario-autenticado.interface';
+import { BloqueadoEnDemo } from '../auth/decorators/bloqueado-en-demo.decorator';
 import { BorradoresSriExportacionService } from './borradores-sri-exportacion.service';
 import { CalcularImpuestoRentaDto } from './dto/calcular-impuesto-renta.dto';
 import { ConfigurarCategoriaTributariaDto } from './dto/configurar-categoria-tributaria.dto';
@@ -31,6 +32,7 @@ import { ResumenTributarioService } from './resumen-tributario.service';
 
 @ApiTags('Facturación - Resumen tributario y Fintech')
 @ApiBearerAuth('access-token')
+@BloqueadoEnDemo()
 @Controller('facturacion')
 export class ResumenTributarioController {
   constructor(
