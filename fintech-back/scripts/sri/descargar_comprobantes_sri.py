@@ -444,7 +444,18 @@ def descargar(usuario: str, clave: str, ci_adicional: str | None, destino: Path)
     archivos: list[Path] = []
 
     with sync_playwright() as p:
-        navegador = p.chromium.launch(headless=True)
+        # --no-sandbox: Chromium se niega a arrancar corriendo como root
+        # (el usuario por defecto en el contenedor Docker de Render) si no
+        # se pasa este flag -- sin el, falla siempre con
+        # "Running as root without --no-sandbox is not supported".
+        # --disable-dev-shm-usage: Docker limita /dev/shm a 64 MB por
+        # defecto, y Chromium headless lo agota facil con las paginas
+        # pesadas de SRI en Linea, sobre todo con la poca RAM del plan
+        # free de Render; con este flag usa /tmp en su lugar.
+        navegador = p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+        )
         contexto = navegador.new_context(
             accept_downloads=True,
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
