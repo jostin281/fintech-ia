@@ -1,0 +1,40 @@
+# Imagen de PRODUCCION del backend (NestJS) para Render.
+#
+# A diferencia de "Dockerfile" (el que usas en tu PC, que corre en modo
+# watch para desarrollo), esta imagen compila el proyecto una sola vez
+# ("nest build") y arranca el servidor ya compilado -- más rápido y más
+# liviano que recompilar en cada arranque.
+#
+# Se mantienen python3/pip/Playwright+Chromium igual que en el Dockerfile
+# de desarrollo, porque son los que necesita
+# scripts/sri/descargar_comprobantes_sri.py (la descarga de comprobantes
+# recibidos vía SRI en Línea, manual desde "Descargar ahora" o automática
+# si SRI_DESCARGA_AUTOMATICA_HABILITADA=true). Sin este Dockerfile
+# (es decir, con el runtime "node" nativo de Render) ese script no
+# funciona: Render no trae Python ni Chromium instalados.
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+RUN apt-get update -y && apt-get install -y openssl python3 python3-pip && rm -rf /var/lib/apt/lists/*
+
+COPY scripts/sri/requirements.txt ./scripts/sri/requirements.txt
+RUN pip install --break-system-packages --no-cache-dir -r scripts/sri/requirements.txt \
+    && python3 -m playwright install --with-deps chromium
+
+COPY package*.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+RUN npm install
+
+COPY . .
+
+# Build de produccion: compila TypeScript -> dist/
+RUN npm run build
+
+EXPOSE 3000
+
+# Aplica migraciones pendientes y arranca el servidor ya compilado
+# (equivalente a "npm run start:prod", pero encadenado con las
+# migraciones porque en Render no hay un paso de "release" aparte).
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
