@@ -6,6 +6,7 @@ import {
   PLATFORM_ID,
   ViewChild,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -122,6 +123,22 @@ export class Presupuestos implements AfterViewInit, OnDestroy {
       return true;
     });
   });
+
+  constructor() {
+    // Si el modal "Nuevo Presupuesto" se abre justo cuando la cuenta es
+    // nueva (o recién se inició sesión) y los datos todavía no habían
+    // terminado de cargar, formCategoriaId se pudo haber quedado en null
+    // (ver openCreateModal). En cuanto categoriasDisponibles() por fin
+    // trae datos reales, si sigue sin haber una categoría elegida, se
+    // preselecciona la primera — así "Guardar Presupuesto" nunca falla
+    // en silencio por falta de categoría seleccionada.
+    effect(() => {
+      const disponibles = this.categoriasDisponibles();
+      if (this.showModal() && this.formCategoriaId() === null && disponibles.length > 0) {
+        this.formCategoriaId.set(disponibles[0].id);
+      }
+    });
+  }
 
   ngAfterViewInit(): void {
     if (this.isBrowser) {

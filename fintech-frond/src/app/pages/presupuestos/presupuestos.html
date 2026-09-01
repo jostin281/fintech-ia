@@ -189,13 +189,17 @@
         <div class="modal-body">
           <div class="form-group">
             <label class="form-label">Categoría de Gasto</label>
-            <select class="form-input" [value]="formCategoriaId()" (change)="formCategoriaId.set(+$any($event.target).value)">
-              @for (cat of categoriasDisponibles(); track cat.id) {
-                <option [value]="cat.id">{{ cat.nombre }}</option>
+            @if (userData.cargando()) {
+              <p class="text-[11px] text-slate-400 mt-1">Cargando categorías…</p>
+            } @else {
+              <select class="form-input" [value]="formCategoriaId()" (change)="formCategoriaId.set(+$any($event.target).value)">
+                @for (cat of categoriasDisponibles(); track cat.id) {
+                  <option [value]="cat.id">{{ cat.nombre }}</option>
+                }
+              </select>
+              @if (categoriasDisponibles().length === 0) {
+                <p class="text-[11px] text-amber-400 mt-1">Todas tus categorías de gasto ya tienen presupuesto este mes.</p>
               }
-            </select>
-            @if (categoriasDisponibles().length === 0) {
-              <p class="text-[11px] text-amber-400 mt-1">Todas tus categorías de gasto ya tienen presupuesto este mes.</p>
             }
           </div>
 
