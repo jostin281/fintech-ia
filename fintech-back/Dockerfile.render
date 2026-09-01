@@ -30,7 +30,18 @@ RUN npm install
 COPY . .
 
 # Build de produccion: compila TypeScript -> dist/
-RUN npm run build
+#
+# BUG conocido de Prisma 7 + TypeScript "nodenext": el cliente generado
+# (src/generated/prisma) importa sus archivos internos como ".js"
+# (ej. "./internal/class.js") pero como esos archivos solo existen como
+# ".ts" (Prisma 7 ya no pre-compila un .js), "nest build" los resuelve
+# y los re-emite en el JS compilado usando la extension real ".ts"
+# (ej. require("./internal/class.ts")), que en producción no existe
+# -> "Cannot find module './internal/class.ts'" al arrancar. El sed de
+# abajo corrige esas extensiones SOLO dentro del cliente Prisma
+# compilado, después del build.
+RUN npm run build \
+    && find dist/generated/prisma -name "*.js" -exec sed -i "s/\.ts'/\.js'/g; s/\.ts\"/\.js\"/g" {} +
 
 EXPOSE 3000
 
