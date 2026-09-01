@@ -65,7 +65,10 @@ services:
     name: fintech-front-app
     runtime: static
     rootDir: fintech-frond
-    buildCommand: npm install && npm run build
+    # Tras compilar, el build de Angular no genera un browser/index.html utilizable como sitio estatico puro (queda solo como plantilla
+    # SSR/prerender). El archivo que SI trae el bootstrap del cliente (script de main.js, etc.) es index.csr.html, asi que lo
+    # copiamos como index.html para que la regla de rewrite de abajo (/* -> /index.html) sirva la app real en cualquier ruta.
+    buildCommand: npm install && npm run build && cp dist/fintech-frond/browser/index.csr.html dist/fintech-frond/browser/index.html
     staticPublishPath: dist/fintech-frond/browser
     routes:
       - type: rewrite
