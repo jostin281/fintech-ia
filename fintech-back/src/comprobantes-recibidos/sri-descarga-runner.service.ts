@@ -211,7 +211,7 @@ export class SriDescargaRunnerService {
           archivos: [],
           mensaje:
             `El script de descarga terminó con código ${codigo} sin un resultado ` +
-            `interpretable. Detalle: ${salidaError.slice(-1000) || '(sin salida de error)'}`,
+            `interpretable. Detalle: ${salidaError.slice(-4000) || '(sin salida de error)'}`,
         });
       });
     });

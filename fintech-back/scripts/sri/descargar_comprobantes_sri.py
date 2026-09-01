@@ -401,21 +401,25 @@ def intentar_click_menu_comprobantes_recibidos(pagina) -> bool:
         # todavía, esto muestra qué encabezados SÍ están visibles — puede
         # que haga falta abrir antes una sección colapsada del menú.
         try:
+            # Recorte corto a propósito (100 caracteres, no 500-1000): esto se
+            # manda dentro del mensaje de error final si todo falla, y ese
+            # mensaje solo se queda con los últimos ~1000-4000 caracteres —
+            # un volcado de HTML largo aquí se comía el registro de los pasos
+            # posteriores (qué URL se probó, por qué falló cada una).
             contenido_completo = pagina.content()
             idx = contenido_completo.lower().find("recibidos")
             if idx != -1:
-                inicio = max(0, idx - 500)
-                fin = min(len(contenido_completo), idx + 500)
-                log("[DIAGNÓSTICO] HTML alrededor de 'recibidos' en el menú: " + contenido_completo[inicio:fin])
+                inicio = max(0, idx - 60)
+                fin = min(len(contenido_completo), idx + 60)
+                log("[DIAGNÓSTICO] Fragmento HTML cerca de 'recibidos': " + contenido_completo[inicio:fin])
             else:
                 encabezados = pagina.eval_on_selector_all(
                     "a.ui-panelmenu-header-link, .ui-menuitem-text",
                     "els => els.map(e => (e.textContent || '').trim()).filter(Boolean)",
                 )
                 log(
-                    "[DIAGNÓSTICO] El texto 'recibidos' todavía no aparece en el HTML del menú "
-                    "(puede que haga falta abrir una sección primero). Textos de menú visibles: "
-                    + str(encabezados[:40])
+                    "[DIAGNÓSTICO] 'recibidos' no aparece en el menú todavía. Textos visibles: "
+                    + str(encabezados[:15])
                 )
         except Exception as exc_diag:
             log(f"[DIAGNÓSTICO] No se pudo inspeccionar el menú: {exc_diag}")
@@ -539,48 +543,52 @@ def descargar(usuario: str, clave: str, ci_adicional: str | None, destino: Path)
                     "extra de verificación, esta descarga automática no puede continuar)."
                 )
 
-            # Primero como lo haría una persona real: menú principal + clic en
-            # "Comprobantes electrónicos recibidos". Más confiable que adivinar
-            # una URL directa — confirmado con pruebas reales que varias de
-            # esas URLs llevan a una página "no encontrada" o a la pantalla de
-            # login de otra sub-aplicación del SRI sin avisar con un error obvio.
+            # Primero las URLs directas conocidas (la primera de la lista ya se
+            # confirmó con una cuenta real, incluyendo su contexto de
+            # navegación MPT) — es rápido y no depende de que el menú se
+            # vea/anime igual en el navegador headless del contenedor. Solo
+            # si TODAS fallan se recurre al clic del menú como respaldo, que
+            # es más lento (tiene que abrir y escanear el acordeón del menú).
             url_comprobantes = None
-            if intentar_click_menu_comprobantes_recibidos(pagina):
-                url_comprobantes = pagina.url
-
-            if not url_comprobantes:
-                log("El clic en el menú no funcionó — probando URLs directas conocidas como respaldo...")
-                for url_candidato in SRI_COMPROBANTES_URLS_CANDIDATOS:
+            for url_candidato in SRI_COMPROBANTES_URLS_CANDIDATOS:
+                try:
+                    pagina.goto(url_candidato, wait_until="networkidle", timeout=20000)
+                    # Dale un respiro al router (Angular) del portal: a veces
+                    # queda "networkidle" un instante antes de que decida que
+                    # la ruta no es válida y te manda a "pagina-no-encontrada".
                     try:
-                        pagina.goto(url_candidato, wait_until="networkidle", timeout=30000)
-                        # Dale un respiro al router (Angular) del portal: a veces
-                        # queda "networkidle" un instante antes de que decida que
-                        # la ruta no es válida y te manda a "pagina-no-encontrada".
+                        pagina.wait_for_timeout(1500)
+                    except Exception:
+                        pass
+                    url_actual = pagina.url.lower()
+                    es_login = "login" in url_actual or "inicio" in url_actual
+                    es_404 = "no-encontrada" in url_actual or "no encontrada" in url_actual or "404" in url_actual
+                    if not es_404:
                         try:
-                            pagina.wait_for_timeout(1500)
+                            inicio_contenido = pagina.content().lower()[:3000]
+                            if "no encontrada" in inicio_contenido or "página no existe" in inicio_contenido:
+                                es_404 = True
                         except Exception:
                             pass
-                        url_actual = pagina.url.lower()
-                        es_login = "login" in url_actual or "inicio" in url_actual
-                        es_404 = "no-encontrada" in url_actual or "no encontrada" in url_actual or "404" in url_actual
-                        if not es_404:
-                            try:
-                                inicio_contenido = pagina.content().lower()[:3000]
-                                if "no encontrada" in inicio_contenido or "página no existe" in inicio_contenido:
-                                    es_404 = True
-                            except Exception:
-                                pass
-                        if not es_login and not es_404 and parece_pantalla_login(pagina):
-                            es_login = True
-                            log(f"URL {url_candidato} en realidad muestra una pantalla de inicio de sesión de otra sub-aplicación del SRI.")
-                        if not es_login and not es_404:
-                            url_comprobantes = url_candidato
-                            break
-                        elif es_404:
-                            log(f"URL {url_candidato} llevó a una página 'no encontrada' — probando la siguiente opción.")
-                    except Exception as exc:
-                        log(f"URL {url_candidato} no accesible: {exc}")
-                        continue
+                    if not es_login and not es_404 and parece_pantalla_login(pagina):
+                        es_login = True
+                        log(f"URL {url_candidato} en realidad muestra una pantalla de inicio de sesión de otra sub-aplicación del SRI.")
+                    if not es_login and not es_404:
+                        url_comprobantes = url_candidato
+                        log(f"URL directa funcionó: {url_candidato}")
+                        break
+                    elif es_404:
+                        log(f"URL {url_candidato} llevó a una página 'no encontrada' — probando la siguiente opción.")
+                    elif es_login:
+                        log(f"URL {url_candidato} pidió login de nuevo — probando la siguiente opción.")
+                except Exception as exc:
+                    log(f"URL {url_candidato} no accesible: {exc}")
+                    continue
+
+            if not url_comprobantes:
+                log("Ninguna URL directa funcionó — probando el clic del menú como respaldo...")
+                if intentar_click_menu_comprobantes_recibidos(pagina):
+                    url_comprobantes = pagina.url
 
             if not url_comprobantes:
                 raise RuntimeError(
