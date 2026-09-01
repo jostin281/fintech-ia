@@ -167,8 +167,25 @@ SELECTORES_XML = [
 ]
 
 
+# Buffer en memoria con las últimas líneas de log(). Además de ir a stderr
+# (útil si alguien revisa los logs de Render a mano), se usa para armar un
+# resumen de diagnóstico que viaja DENTRO del mensaje de error final -- así
+# "Última ejecución" en la pantalla de la app ya trae el detalle, sin
+# depender de que alguien entre a buscar los logs del contenedor.
+_DIAGNOSTICO: list[str] = []
+
+
 def log(mensaje: str) -> None:
-    print(f"[{time.strftime('%H:%M:%S')}] {mensaje}", file=sys.stderr, flush=True)
+    linea = f"[{time.strftime('%H:%M:%S')}] {mensaje}"
+    print(linea, file=sys.stderr, flush=True)
+    _DIAGNOSTICO.append(linea)
+    del _DIAGNOSTICO[:-60]  # no dejar crecer el buffer sin límite
+
+
+def resumen_diagnostico(max_lineas: int = 12) -> str:
+    if not _DIAGNOSTICO:
+        return "(sin líneas de diagnóstico registradas)"
+    return " | ".join(_DIAGNOSTICO[-max_lineas:])
 
 
 def parece_pantalla_login(pagina) -> bool:
@@ -568,7 +585,8 @@ def descargar(usuario: str, clave: str, ci_adicional: str | None, destino: Path)
             if not url_comprobantes:
                 raise RuntimeError(
                     "No se pudo llegar al módulo de comprobantes recibidos "
-                    "(el SRI pudo haber cambiado la ruta del portal)."
+                    "(el SRI pudo haber cambiado la ruta del portal). Detalle: "
+                    + resumen_diagnostico()
                 )
 
             aplicar_filtro_fecha_ayer(pagina)
