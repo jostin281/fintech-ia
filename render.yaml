@@ -64,7 +64,6 @@ services:
   - type: web
     name: fintech-front-app
     runtime: static
-    plan: free
     rootDir: fintech-frond
     buildCommand: npm install && npm run build
     staticPublishPath: dist/fintech-frond/browser
