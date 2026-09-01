@@ -1,3 +1,5 @@
 credenciales.env
 descargas/
 descargar_comprobantes_sri.log
+panel_config.json
+__pycache__/

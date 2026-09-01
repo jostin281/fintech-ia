@@ -1,3 +1,8 @@
 playwright>=1.40
 python-dotenv>=1.0
 requests>=2.31
+
+# Opcional: le da al panel (panel.bat) un calendario visual para elegir
+# el dia a descargar. Si no esta instalado, el panel sigue funcionando
+# igual pero con un campo de texto (DD/MM/AAAA) en vez de calendario.
+tkcalendar>=1.6

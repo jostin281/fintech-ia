@@ -1,20 +1,47 @@
 # configurar_tarea_windows.ps1
-# Registra la descarga diaria de comprobantes SRI en el Programador de Tareas
-# de Windows para que corra automaticamente todos los dias a las 7:00 AM.
+# Registra o quita la tarea de descarga diaria automatica de comprobantes
+# SRI en el Programador de Tareas de Windows.
+#
+# Uso:
+#   powershell -ExecutionPolicy Bypass -File configurar_tarea_windows.ps1                # registra, todos los dias a las 07:00
+#   powershell -ExecutionPolicy Bypass -File configurar_tarea_windows.ps1 -Hora 06:30     # registra a otra hora
+#   powershell -ExecutionPolicy Bypass -File configurar_tarea_windows.ps1 -Quitar         # elimina la tarea (desactiva la descarga automatica)
+#
+# Requiere ejecutarse como administrador (crear/quitar una tarea con
+# privilegios "Highest" lo exige Windows). El panel de control
+# (panel.bat / panel_control.py) ya pide esos permisos automaticamente
+# al hacer clic en el boton "Activar/Desactivar descarga automatica" —
+# no hace falta correr este script a mano salvo que prefieras la linea
+# de comandos.
+
+param(
+    [string]$Hora = "07:00",
+    [switch]$Quitar
+)
 
 $ErrorActionPreference = "Stop"
 
 $scriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $batPath    = Join-Path $scriptDir "ejecutar.bat"
 $taskName   = "FinTech - Descarga Comprobantes SRI"
-$hora       = "07:00"   # Cambia aqui la hora de ejecucion diaria (formato HH:MM)
+
+$tareaExistente = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+
+if ($Quitar) {
+    if ($tareaExistente) {
+        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+        Write-Host "OK Tarea '$taskName' eliminada. La descarga automatica diaria quedo desactivada." -ForegroundColor Green
+    } else {
+        Write-Host "La tarea '$taskName' no estaba registrada (nada que quitar)." -ForegroundColor Yellow
+    }
+    exit 0
+}
 
 if (-not (Test-Path $batPath)) {
     Write-Error "No encontre ejecutar.bat en $scriptDir."
     exit 1
 }
 
-$tareaExistente = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 if ($tareaExistente) {
     Write-Host "Eliminando tarea anterior '$taskName'..."
     Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
@@ -25,7 +52,7 @@ $accion = New-ScheduledTaskAction `
     -Argument "/c `"$batPath`"" `
     -WorkingDirectory $scriptDir
 
-$disparador = New-ScheduledTaskTrigger -Daily -At $hora
+$disparador = New-ScheduledTaskTrigger -Daily -At $Hora
 
 $configuracion = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit (New-TimeSpan -Hours 1) `
@@ -44,5 +71,5 @@ Register-ScheduledTask `
 Write-Host ""
 Write-Host "OK Tarea registrada exitosamente:" -ForegroundColor Green
 Write-Host "   Nombre : $taskName"
-Write-Host "   Hora   : todos los dias a las $hora"
+Write-Host "   Hora   : todos los dias a las $Hora"
 Write-Host "   Script : $batPath"

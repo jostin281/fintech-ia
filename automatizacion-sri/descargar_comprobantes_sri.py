@@ -28,7 +28,7 @@ import os
 import shutil
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -41,7 +41,12 @@ DESCARGAS_DIR = BASE_DIR / "descargas"
 PROCESADOS_DIR = DESCARGAS_DIR / "procesados"
 LOG_FILE = BASE_DIR / "descargar_comprobantes_sri.log"
 
-SRI_LOGIN_URL = "https://srienlinea.sri.gob.ec/sri-en-linea/inicio/menu/publico"
+# La URL vieja ("/sri-en-linea/inicio/menu/publico") ya no existe — el portal
+# ahora es una SPA Angular y esa ruta da 404. Verificado el 2026-08-31: entrar
+# a cualquier ruta que exija sesión (como "contribuyente/perfil") redirige
+# automáticamente al login real de Keycloak, que es lo que este script
+# necesita (los selectores de abajo SÍ coinciden con ese formulario real).
+SRI_LOGIN_URL = "https://srienlinea.sri.gob.ec/sri-en-linea/contribuyente/perfil"
 SRI_COMPROBANTES_URL = (
     "https://srienlinea.sri.gob.ec/sri-en-linea/"
     "SriRucInternet/ConsultaRuc/Consultas/consultaRuc"
@@ -49,27 +54,44 @@ SRI_COMPROBANTES_URL = (
 
 # Múltiples candidatos de URL para comprobantes recibidos (el portal SRI
 # cambia sus rutas periódicamente — se prueban en orden hasta encontrar una).
-# A diferencia del login (ya verificado arriba), estas URLs y los
-# selectores de SELECTORES_XML más abajo SIGUEN SIN CONFIRMAR contra el
-# portal real: no fue posible probarlos sin iniciar sesión con una cuenta
-# real. Corre este script con --debug y una cuenta real para confirmarlos
-# o corregirlos.
+#
+# CONFIRMADO EN UNA CUENTA REAL el 2026-08-31: la primera URL de abajo
+# ("SriComprobantesElectronicosInternet/...") SÍ funciona después de
+# iniciar sesión — se probó dos veces y llegó sin redirigir a login. Va
+# primera en la lista para no perder tiempo con las demás.
+#
+# La URL "tuportal-internet/accederAplicacion.jspa?redireccion=57..." es
+# el href real del enlace de menú "Comprobantes electrónicos recibidos"
+# (se confirmó que ese enlace existe), pero en la práctica SIEMPRE
+# redirige a un login nuevo aunque ya haya sesión iniciada — esa app usa
+# su propio cliente OIDC ("app-tuportal-internet") con login=true forzado,
+# así que este script no puede usarla directo. Se deja al final de la
+# lista por si el SRI cambia ese comportamiento.
 SRI_COMPROBANTES_URLS_CANDIDATOS = [
-    "https://srienlinea.sri.gob.ec/comprobantes-electronicos-internet/pages/consultas/recibidosConsultas.jsf",
+    # Confirmada con una captura real de pantalla (31/08/2026) — esta es la
+    # que de verdad muestra el listado de comprobantes recibidos.
+    "https://srienlinea.sri.gob.ec/comprobantes-electronicos-internet/pages/consultas/recibidos/comprobantesRecibidos.jsf",
     "https://srienlinea.sri.gob.ec/sri-en-linea/SriComprobantesElectronicosInternet/ConsultaComprobantesRecibidos/Consultas/consultaComprobantesRecibidos",
+    "https://srienlinea.sri.gob.ec/comprobantes-electronicos-internet/pages/consultas/recibidosConsultas.jsf",
     "https://srienlinea.sri.gob.ec/facturacion-internet/pages/consultas/recibidosConsultas.jsf",
+    "https://srienlinea.sri.gob.ec/tuportal-internet/accederAplicacion.jspa?redireccion=57&idGrupo=55",
 ]
+
+TEXTO_MENU_COMPROBANTES_RECIBIDOS = "Comprobantes electrónicos recibidos"
 
 API_BASE_URL = "http://localhost:3001/api"
 
 # Selectores del portal SRI en Línea (JSF). Se prueban en orden; el primero
 # que encuentre el elemento es el que se usa. Si todos fallan con --debug,
 # inspecciona el HTML real y actualiza el primer elemento de cada lista.
-# Verificados el 2026-08-28 inspeccionando el DOM real de
-# https://srienlinea.sri.gob.ec. El portal hoy corre el login sobre
-# Keycloak/OIDC, NO sobre el portal JSF viejo que asumía la primera
-# versión de este script (por eso los selectores originales casi seguro
-# no funcionaban). El primero de cada lista es el confirmado; los demás
+# Verificados el 2026-08-28 y de nuevo el 2026-08-31 inspeccionando el DOM
+# real de https://srienlinea.sri.gob.ec/sri-en-linea/contribuyente/perfil
+# (sin iniciar sesión, para ver el formulario de login). El portal corre el
+# login sobre Keycloak/OIDC, NO sobre el portal JSF viejo que asumía la
+# primera versión de este script. Estos selectores SÍ coinciden con el
+# formulario real (#usuario, #ciAdicional, #password, #kc-login) — si antes
+# fallaban era porque SRI_LOGIN_URL apuntaba a una ruta que da 404, no por
+# estos selectores. El primero de cada lista es el confirmado; los demás
 # quedan de respaldo por si el SRI vuelve a cambiar el portal.
 SELECTORES_USUARIO = [
     "#usuario",
@@ -96,6 +118,41 @@ SELECTORES_BTN_LOGIN = [
     "button[type='submit']",
 ]
 
+# Filtro de fecha del listado de comprobantes recibidos (para traer solo lo
+# del día anterior a hoy en cada corrida diaria, no todo el historial cada
+# vez). A diferencia de los selectores de login, estos NO se pudieron
+# confirmar contra el portal real (hace falta sesión iniciada para verlos).
+# Si ninguno coincide, el script simplemente sigue sin filtrar por fecha —
+# nunca es motivo para detener la descarga. Ajusta con --debug si hace falta.
+SELECTORES_FECHA_DESDE = [
+    "#fechaEmisionDesde",
+    "#fechaDesde",
+    "input[name*='fechaDesde']",
+    "input[name*='FechaDesde']",
+    "input[id*='fechaDesde']",
+    "input[id*='FechaDesde']",
+    "input[id*='fechaInicio']",
+    "input[id*='FechaInicio']",
+]
+SELECTORES_FECHA_HASTA = [
+    "#fechaEmisionHasta",
+    "#fechaHasta",
+    "input[name*='fechaHasta']",
+    "input[name*='FechaHasta']",
+    "input[id*='fechaHasta']",
+    "input[id*='FechaHasta']",
+    "input[id*='fechaFin']",
+    "input[id*='FechaFin']",
+]
+SELECTORES_BOTON_BUSCAR_FECHA = [
+    "button:has-text('Buscar')",
+    "button:has-text('Consultar')",
+    "input[value*='Buscar']",
+    "input[value*='Consultar']",
+    "#btnBuscar",
+    "#btnConsultar",
+]
+
 SELECTORES_XML = [
     "a[title*='XML']",
     "a[title*='xml']",
@@ -115,6 +172,53 @@ def log(mensaje: str) -> None:
     print(linea)
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(linea + "\n")
+
+
+def parece_pantalla_login(pagina) -> bool:
+    """
+    True si la página actual parece un formulario de login (de cualquier
+    sub-aplicación del SRI, no solo la de Keycloak) en vez del listado de
+    comprobantes. Varias URLs "directas" del portal en realidad llevan a
+    su propia pantalla de inicio de sesión separada (confirmado con
+    pruebas reales) en vez de dar error o redirigir de forma obvia, así
+    que no basta con mirar la URL — hay que revisar el contenido.
+    """
+    try:
+        if pagina.query_selector("input[type='password']"):
+            return True
+    except Exception:
+        pass
+    try:
+        titulo = (pagina.title() or "").lower()
+        if "login" in titulo or "iniciar sesión" in titulo or "iniciar sesion" in titulo:
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def pausa_debug(mensaje: str, segundos_si_no_hay_terminal: float = 4.0) -> None:
+    """
+    En modo --debug, muestra `mensaje` y espera a que el usuario presione
+    Enter para seguir viendo el navegador paso a paso — pero SOLO si el
+    script tiene una terminal real conectada (cuando corres
+    `python descargar_comprobantes_sri.py --debug` a mano en PowerShell).
+
+    Si se lanzó sin terminal (por ejemplo desde el panel, panel_control.py,
+    que no tiene consola), no hay forma de escribir un Enter, y pedírselo
+    colgaba el proceso con un EOFError. En ese caso, en vez de pedir
+    Enter, solo espera unos segundos (para dar tiempo a mirar el
+    navegador) y sigue solo.
+    """
+    log(mensaje)
+    hay_terminal = bool(sys.stdin) and sys.stdin.isatty()
+    if hay_terminal:
+        try:
+            input()
+        except EOFError:
+            pass
+    else:
+        time.sleep(segundos_si_no_hay_terminal)
 
 
 def cargar_credenciales() -> dict:
@@ -149,7 +253,268 @@ def encontrar_elemento(pagina, selectores: list[str], descripcion: str, timeout:
     return None
 
 
-def descargar_xml_sri(usuario: str, clave: str, ci_adicional: str, debug: bool) -> list[Path]:
+def fecha_ayer() -> str:
+    """Fecha de ayer (respecto a hoy) en formato dd/mm/aaaa, el que suele
+    usar el portal del SRI en sus filtros de búsqueda."""
+    ayer = datetime.now() - timedelta(days=1)
+    return ayer.strftime("%d/%m/%Y")
+
+
+def encontrar_indice_columna(tabla, nombre_columna: str):
+    """
+    Busca el índice (0-based) de la columna cuyo encabezado coincide
+    exactamente con `nombre_columna` (sin importar mayúsculas/minúsculas)
+    dentro de una tabla de resultados del SRI. Confirmado con una captura
+    real: la columna de descarga del XML se llama literalmente
+    "Documento" (con un ícono, no un enlace de texto "XML").
+    """
+    try:
+        encabezados = tabla.query_selector_all("thead th")
+        if not encabezados:
+            primera_fila = tabla.query_selector("tr")
+            if primera_fila:
+                encabezados = primera_fila.query_selector_all("th, td")
+        objetivo = nombre_columna.strip().lower()
+        for i, celda in enumerate(encabezados):
+            texto = (celda.text_content() or "").strip().lower()
+            if texto == objetivo:
+                return i
+    except Exception:
+        pass
+    return None
+
+
+def fecha_valida(texto: str) -> bool:
+    """True si texto tiene forma dd/mm/aaaa y es una fecha real."""
+    try:
+        datetime.strptime(texto, "%d/%m/%Y")
+        return True
+    except ValueError:
+        return False
+
+
+MESES_ES = [
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+]
+
+
+def aplicar_filtro_fecha(pagina, debug: bool, fecha: str) -> bool:
+    """
+    Filtra el listado de comprobantes recibidos por la fecha indicada
+    (formato dd/mm/aaaa) — por defecto el día anterior a hoy, o cualquier
+    día elegido con --fecha o el calendario del panel.
+
+    Confirmado con una captura real de la pantalla "Comprobantes
+    electrónicos recibidos" del SRI: el filtro NO son dos campos de texto
+    "desde/hasta" (esa era una suposición equivocada) — son tres listas
+    desplegables bajo "Periodo emisión": año, mes y día. Por eso se
+    detectan por las opciones que tienen adentro (por ejemplo, cuál lista
+    contiene "2026" como opción), en vez de por un id fijo que nunca se
+    pudo confirmar contra el portal real.
+    """
+    try:
+        dia, mes, anio = fecha.split("/")
+        dia_num = int(dia)
+        mes_num = int(mes)
+    except Exception:
+        log(f"Fecha '{fecha}' no se pudo interpretar para el filtro — se sigue sin filtrar.")
+        return False
+
+    try:
+        selects = pagina.query_selector_all("select")
+    except Exception as exc:
+        log(f"No se pudo inspeccionar los campos de esta pantalla: {exc}")
+        return False
+
+    select_anio = select_mes = select_dia = None
+    for sel in selects:
+        try:
+            opciones_val = [
+                (o.get_attribute("value") or "").strip().lower()
+                for o in sel.query_selector_all("option")
+            ]
+            opciones_txt = [
+                (o.text_content() or "").strip().lower()
+                for o in sel.query_selector_all("option")
+            ]
+        except Exception:
+            continue
+
+        if select_anio is None and (anio in opciones_val or anio in opciones_txt):
+            select_anio = sel
+            continue
+        if select_mes is None and (
+            any(m in opciones_txt for m in MESES_ES)
+            or f"{mes_num:02d}" in opciones_val
+            or str(mes_num) in opciones_val
+        ):
+            select_mes = sel
+            continue
+        if (
+            select_dia is None
+            and len(opciones_val) >= 28
+            and (f"{dia_num:02d}" in opciones_val or str(dia_num) in opciones_val)
+        ):
+            select_dia = sel
+            continue
+
+    if not (select_anio and select_mes and select_dia):
+        log(
+            "No se encontraron las 3 listas de 'Periodo emisión' (año/mes/día) en esta "
+            f"pantalla (año={'sí' if select_anio else 'no'}, mes={'sí' if select_mes else 'no'}, "
+            f"día={'sí' if select_dia else 'no'}) — se sigue sin filtrar por fecha."
+        )
+        return False
+
+    def elegir(select_el, candidatos_valor, candidatos_texto=None):
+        for valor in candidatos_valor:
+            try:
+                select_el.select_option(value=valor)
+                return True
+            except Exception:
+                continue
+        for texto in candidatos_texto or []:
+            try:
+                select_el.select_option(label=texto)
+                return True
+            except Exception:
+                continue
+        return False
+
+    if not elegir(select_anio, [anio]):
+        log("No se pudo elegir el año en el filtro de 'Periodo emisión'.")
+        return False
+    if not elegir(select_mes, [f"{mes_num:02d}", str(mes_num)], [MESES_ES[mes_num - 1].capitalize()]):
+        log("No se pudo elegir el mes en el filtro de 'Periodo emisión'.")
+        return False
+    if not elegir(select_dia, [f"{dia_num:02d}", str(dia_num)]):
+        log("No se pudo elegir el día en el filtro de 'Periodo emisión'.")
+        return False
+
+    log(f"Filtro de fecha aplicado (Periodo emisión): {fecha}")
+
+    boton_buscar = encontrar_elemento(
+        pagina, SELECTORES_BOTON_BUSCAR_FECHA, "botón buscar/consultar", timeout=3000
+    )
+    if boton_buscar:
+        try:
+            boton_buscar.click()
+            try:
+                pagina.wait_for_load_state("networkidle", timeout=15000)
+            except PlaywrightTimeoutError:
+                pagina.wait_for_load_state("domcontentloaded", timeout=8000)
+            log("Búsqueda con filtro de fecha enviada.")
+        except Exception as exc:
+            log(f"No se pudo hacer clic en el botón de Consultar: {exc}")
+    else:
+        log("Se llenó el filtro de fecha pero no se encontró un botón de Consultar explícito.")
+
+    return True
+
+
+def intentar_click_menu_comprobantes_recibidos(pagina) -> bool:
+    """
+    Plan B para llegar a comprobantes recibidos: si ninguna URL directa
+    funcionó, vuelve al menú principal de SRI en Línea (ya con sesión
+    iniciada) y hace clic en el enlace cuyo texto es literalmente
+    "Comprobantes electrónicos recibidos" — el mismo que usarías tú a
+    mano. Es más confiable que una URL fija porque no depende de un id
+    interno que puede variar según tu tipo de cuenta/régimen.
+    """
+    try:
+        pagina.goto(
+            "https://srienlinea.sri.gob.ec/sri-en-linea/",
+            wait_until="networkidle",
+            timeout=30000,
+        )
+        pagina.wait_for_timeout(1000)
+
+        # El enlace real está anidado dentro de la sección "Facturación
+        # Electrónica" del menú (confirmado con una captura de pantalla
+        # real) — si esa sección está colapsada, "Comprobantes electrónicos
+        # recibidos" ni siquiera aparece en la página. Se abre primero.
+        try:
+            encabezado_seccion = pagina.get_by_text("Facturación Electrónica", exact=False).first
+            encabezado_seccion.click(timeout=5000)
+            pagina.wait_for_timeout(700)
+        except Exception as exc_seccion:
+            log(f"No se pudo abrir la sección 'Facturación Electrónica' del menú (puede que ya estuviera abierta): {exc_seccion}")
+
+        # Diagnóstico: guarda en el log qué hay realmente en el menú en este
+        # momento. Si "Comprobantes electrónicos recibidos" no aparece
+        # todavía, esto muestra qué encabezados SÍ están visibles — puede
+        # que haga falta abrir antes una sección colapsada del menú.
+        try:
+            contenido_completo = pagina.content()
+            idx = contenido_completo.lower().find("recibidos")
+            if idx != -1:
+                inicio = max(0, idx - 500)
+                fin = min(len(contenido_completo), idx + 500)
+                log("[DIAGNÓSTICO] HTML alrededor de 'recibidos' en el menú: " + contenido_completo[inicio:fin])
+            else:
+                encabezados = pagina.eval_on_selector_all(
+                    "a.ui-panelmenu-header-link, .ui-menuitem-text",
+                    "els => els.map(e => (e.textContent || '').trim()).filter(Boolean)",
+                )
+                log(
+                    "[DIAGNÓSTICO] El texto 'recibidos' todavía no aparece en el HTML del menú "
+                    "(puede que haga falta abrir una sección primero). Textos de menú visibles: "
+                    + str(encabezados[:40])
+                )
+        except Exception as exc_diag:
+            log(f"[DIAGNÓSTICO] No se pudo inspeccionar el menú: {exc_diag}")
+
+        enlace = pagina.get_by_text(TEXTO_MENU_COMPROBANTES_RECIBIDOS, exact=False).first
+        enlace.scroll_into_view_if_needed(timeout=5000)
+        # El menú del SRI es un acordeón (PrimeNG) — a veces el enlace real
+        # está debajo del encabezado de otra sección mientras termina de
+        # abrirse/animarse, y Playwright rechaza el clic por "no estable" o
+        # "intercepted". Se le da un respiro y, si el clic normal sigue
+        # fallando, se fuerza (salta esas validaciones de estabilidad).
+        pagina.wait_for_timeout(500)
+        try:
+            enlace.click(timeout=8000)
+        except Exception as exc_click:
+            log(f"El clic normal en el menú falló ({exc_click}); probando con clic forzado...")
+            enlace.click(timeout=5000, force=True)
+        try:
+            pagina.wait_for_load_state("networkidle", timeout=20000)
+        except PlaywrightTimeoutError:
+            pagina.wait_for_load_state("domcontentloaded", timeout=10000)
+
+        en_login = (
+            "login" in pagina.url.lower()
+            or "auth/realms" in pagina.url.lower()
+            or parece_pantalla_login(pagina)
+        )
+        parece_pantalla_correcta = "comprobante" in pagina.url.lower() or "recibidos" in pagina.url.lower()
+        if not parece_pantalla_correcta:
+            try:
+                titulo = (pagina.title() or "").lower()
+                if "comprobante" in titulo or "recibidos" in titulo:
+                    parece_pantalla_correcta = True
+            except Exception:
+                pass
+        exito = not en_login and parece_pantalla_correcta
+        if exito:
+            log(f"Se llegó a comprobantes recibidos haciendo clic en el menú: {pagina.url}")
+        elif en_login:
+            log(f"El clic en el menú terminó pidiendo login de nuevo: {pagina.url}")
+        else:
+            log(
+                "El clic en el menú no llevó a la pantalla de comprobantes esperada "
+                f"(terminó en: {pagina.url}) — puede que haya hecho clic en el enlace equivocado."
+            )
+        return exito
+    except Exception as exc:
+        log(f"No se pudo hacer clic en el menú '{TEXTO_MENU_COMPROBANTES_RECIBIDOS}': {exc}")
+        return False
+
+
+def descargar_xml_sri(
+    usuario: str, clave: str, ci_adicional: str, debug: bool, fecha: str | None = None
+) -> list[Path]:
     """
     Inicia sesión en SRI en Línea y descarga los XML de comprobantes
     electrónicos recibidos disponibles.
@@ -174,7 +539,7 @@ def descargar_xml_sri(usuario: str, clave: str, ci_adicional: str, debug: bool) 
         if debug:
             log("[DEBUG] Navegador abierto. Revisa la página de login.")
             log(f"[DEBUG] URL actual: {pagina.url}")
-            input("[DEBUG] Presiona Enter para continuar con el login automático...")
+            pausa_debug("[DEBUG] Presiona Enter para continuar con el login automático (o espera, sigue solo — no cierres la ventana)...")
 
         # --- Login con múltiples selectores ---
         campo_usuario = encontrar_elemento(pagina, SELECTORES_USUARIO, "campo usuario", timeout=10000)
@@ -186,7 +551,7 @@ def descargar_xml_sri(usuario: str, clave: str, ci_adicional: str, debug: bool) 
             log("Ejecuta con --debug para inspeccionar el portal manualmente.")
             log("Selectores probados para usuario: " + str(SELECTORES_USUARIO))
             if debug:
-                input("[DEBUG] Inspecciona el formulario y presiona Enter para salir...")
+                pausa_debug("[DEBUG] Inspecciona el formulario y presiona Enter para salir (o espera, sigue solo — no cierres la ventana)...")
             navegador.close()
             raise RuntimeError("No se encontraron los campos de login del SRI.")
 
@@ -211,50 +576,143 @@ def descargar_xml_sri(usuario: str, clave: str, ci_adicional: str, debug: bool) 
         try:
             pagina.wait_for_load_state("networkidle", timeout=30000)
         except PlaywrightTimeoutError:
-            pagina.wait_for_load_state("domcontentloaded", timeout=15000)
+            try:
+                pagina.wait_for_load_state("domcontentloaded", timeout=15000)
+            except PlaywrightTimeoutError:
+                log(
+                    "AVISO: la página tardó demasiado en cargar después del login "
+                    "(puede ser el internet o que el portal del SRI esté lento en este momento). "
+                    "Se continúa de todas formas — si no llega a comprobantes, vuelve a intentarlo en un rato."
+                )
 
         if debug:
             log(f"[DEBUG] URL tras login: {pagina.url}")
-            input("[DEBUG] ¿Inició sesión? Presiona Enter para ir a comprobantes...")
+            pausa_debug("[DEBUG] ¿Inició sesión? Presiona Enter para ir a comprobantes (o espera, sigue solo en unos segundos — no cierres la ventana)...")
 
         # --- Navegar a comprobantes recibidos ---
+        # Primero se intenta como lo haría una persona real: entrar al menú
+        # principal y hacer clic en "Comprobantes electrónicos recibidos".
+        # Es más confiable que adivinar una URL directa — con pruebas reales
+        # se confirmó que varias de esas URLs directas en realidad llevan a
+        # una página "no encontrada" o a la pantalla de login de otra
+        # sub-aplicación del SRI, sin avisar con un error obvio. Si el clic
+        # en el menú falla, se prueban las URLs directas como respaldo.
         url_comprobantes = None
-        for url_candidato in SRI_COMPROBANTES_URLS_CANDIDATOS:
-            try:
-                log(f"Intentando URL de comprobantes: {url_candidato}")
-                pagina.goto(url_candidato, wait_until="networkidle", timeout=30000)
-                # Si llegamos aquí sin excepción y la URL no redirigió al login, asumimos que funciona
-                if "login" not in pagina.url.lower() and "inicio" not in pagina.url.lower():
-                    url_comprobantes = url_candidato
-                    log(f"URL de comprobantes activa: {url_comprobantes}")
-                    break
-                else:
-                    log(f"URL redirigió (probablemente sesión expirada o URL incorrecta): {pagina.url}")
-            except Exception as exc:
-                log(f"URL {url_candidato} no accesible: {exc}")
-                continue
+        log("Yendo al menú de SRI en Línea para entrar a 'Comprobantes electrónicos recibidos'...")
+        if intentar_click_menu_comprobantes_recibidos(pagina):
+            url_comprobantes = pagina.url
+
+        if not url_comprobantes:
+            log("El clic en el menú no funcionó — probando URLs directas conocidas como respaldo...")
+            for url_candidato in SRI_COMPROBANTES_URLS_CANDIDATOS:
+                try:
+                    log(f"Intentando URL de comprobantes: {url_candidato}")
+                    pagina.goto(url_candidato, wait_until="networkidle", timeout=30000)
+                    # Dale un respiro al router (Angular) del portal: a veces la
+                    # página queda "networkidle" un instante antes de que el
+                    # router decida que la ruta no es válida y te manda a
+                    # "pagina-no-encontrada" — sin esta pausa lo detectaríamos
+                    # como si hubiera funcionado.
+                    try:
+                        pagina.wait_for_timeout(1500)
+                    except Exception:
+                        pass
+                    url_actual = pagina.url.lower()
+                    es_login = "login" in url_actual or "inicio" in url_actual
+                    es_404 = "no-encontrada" in url_actual or "no encontrada" in url_actual or "404" in url_actual
+                    if not es_404:
+                        try:
+                            inicio_contenido = pagina.content().lower()[:3000]
+                            if "no encontrada" in inicio_contenido or "página no existe" in inicio_contenido:
+                                es_404 = True
+                        except Exception:
+                            pass
+                    if not es_login and not es_404 and parece_pantalla_login(pagina):
+                        es_login = True
+                        log(f"URL {url_candidato} en realidad muestra una pantalla de inicio de sesión de otra sub-aplicación del SRI.")
+                    # Si llegamos aquí sin excepción, la URL no redirigió al login
+                    # y tampoco terminó en una página "no encontrada", asumimos que funciona
+                    if not es_login and not es_404:
+                        url_comprobantes = url_candidato
+                        log(f"URL de comprobantes activa: {url_comprobantes}")
+                        break
+                    elif es_404:
+                        log(f"URL {url_candidato} llevó a una página 'no encontrada' (esa ruta directa no sirve en este portal) — probando la siguiente opción.")
+                    else:
+                        log(f"URL redirigió o pidió login de nuevo (probablemente sesión expirada o URL incorrecta): {pagina.url}")
+                except Exception as exc:
+                    log(f"URL {url_candidato} no accesible: {exc}")
+                    continue
 
         if not url_comprobantes:
             log("ADVERTENCIA: Ninguna URL de comprobantes funcionó correctamente.")
             log(f"URL actual: {pagina.url}")
             if debug:
-                input("[DEBUG] Navega manualmente al módulo de comprobantes recibidos y presiona Enter...")
+                pausa_debug("[DEBUG] Navega manualmente al módulo de comprobantes recibidos y presiona Enter (o espera, sigue solo — no cierres la ventana)...")
+
+        # --- Filtrar por fecha: la que se haya elegido, o ayer por defecto ---
+        fecha_objetivo = fecha or fecha_ayer()
+        aplicar_filtro_fecha(pagina, debug, fecha_objetivo)
 
         if debug:
             log(f"[DEBUG] URL comprobantes: {pagina.url}")
-            input("[DEBUG] ¿Ves el listado de comprobantes? Presiona Enter para descargar...")
+            pausa_debug(f"[DEBUG] ¿Ves el listado de comprobantes de {fecha_objetivo}? Presiona Enter para descargar (o espera, sigue solo en 15 segundos — NO cierres la ventana, se cierra sola cuando termine)...", segundos_si_no_hay_terminal=15.0)
 
         # Esperar a que cargue la tabla
         time.sleep(2)
 
         # --- Encontrar botones de descarga XML ---
+        # Primero por la columna real "Documento" de la tabla (confirmado
+        # con una captura real: el ícono de descarga del XML vive ahí, no
+        # es un enlace de texto "XML" como se había supuesto antes).
         botones_encontrados = []
-        for selector in SELECTORES_XML:
-            botones = pagina.query_selector_all(selector)
-            if botones:
-                log(f"Selector de XML activo: '{selector}' → {len(botones)} elemento(s)")
-                botones_encontrados = botones
-                break
+        try:
+            tabla_resultados = (
+                pagina.query_selector("table.ui-datatable-data")
+                or pagina.query_selector(".ui-datatable")
+                or pagina.query_selector("table")
+            )
+        except Exception:
+            tabla_resultados = None
+
+        if tabla_resultados:
+            indice_documento = encontrar_indice_columna(tabla_resultados, "Documento")
+            if indice_documento is not None:
+                try:
+                    filas = tabla_resultados.query_selector_all("tbody tr")
+                    if not filas:
+                        filas = tabla_resultados.query_selector_all("tr")[1:]
+                except Exception:
+                    filas = []
+                for fila in filas:
+                    try:
+                        celdas = fila.query_selector_all("td")
+                        if len(celdas) > indice_documento:
+                            celda_doc = celdas[indice_documento]
+                            clic_elemento = (
+                                celda_doc.query_selector("img")
+                                or celda_doc.query_selector("a")
+                                or celda_doc.query_selector("button")
+                            )
+                            if clic_elemento:
+                                botones_encontrados.append(clic_elemento)
+                    except Exception:
+                        continue
+                if botones_encontrados:
+                    log(
+                        f"Columna 'Documento' encontrada en la tabla (índice {indice_documento}) → "
+                        f"{len(botones_encontrados)} ícono(s) de descarga."
+                    )
+
+        if not botones_encontrados:
+            # Respaldo: los selectores adivinados de antes, por si la
+            # estructura de la tabla cambia.
+            for selector in SELECTORES_XML:
+                botones = pagina.query_selector_all(selector)
+                if botones:
+                    log(f"Selector de XML activo: '{selector}' → {len(botones)} elemento(s)")
+                    botones_encontrados = botones
+                    break
 
         if not botones_encontrados:
             log("ADVERTENCIA: No se encontraron botones de descarga de XML.")
@@ -262,9 +720,32 @@ def descargar_xml_sri(usuario: str, clave: str, ci_adicional: str, debug: bool) 
             log("Selectores probados: " + str(SELECTORES_XML))
             log("Ejecuta con --debug para inspeccionar el HTML del listado.")
             if debug:
-                log("[DEBUG] Contenido de la página (primeros 3000 chars):")
-                log(pagina.content()[:3000])
-                input("[DEBUG] Inspecciona el listado manualmente y presiona Enter...")
+                log("[DEBUG] Buscando la tabla de resultados para diagnóstico...")
+                volcado_tabla = None
+                try:
+                    tabla = (
+                        pagina.query_selector("table.ui-datatable-data")
+                        or pagina.query_selector(".ui-datatable")
+                        or pagina.query_selector("table")
+                    )
+                    if tabla:
+                        volcado_tabla = tabla.inner_html()
+                except Exception:
+                    pass
+                if not volcado_tabla:
+                    try:
+                        contenido_completo = pagina.content()
+                        idx = contenido_completo.lower().find("autorizaci")
+                        if idx != -1:
+                            volcado_tabla = contenido_completo[idx : idx + 6000]
+                    except Exception:
+                        pass
+                if volcado_tabla:
+                    log("[DEBUG] HTML de la tabla de resultados (hasta 6000 caracteres): " + volcado_tabla[:6000])
+                else:
+                    log("[DEBUG] No se pudo aislar la tabla de resultados — contenido de la página (primeros 3000 chars):")
+                    log(pagina.content()[:3000])
+                pausa_debug("[DEBUG] Inspecciona el listado manualmente y presiona Enter (o espera, sigue solo en 15 segundos — NO cierres la ventana, se cierra sola cuando termine)...", segundos_si_no_hay_terminal=15.0)
             navegador.close()
             return archivos_descargados
 
@@ -382,12 +863,23 @@ def main() -> None:
         action="store_true",
         help="Salta el paso del SRI y solo sube los XML que ya están en la carpeta descargas/.",
     )
+    parser.add_argument(
+        "--fecha",
+        metavar="DD/MM/AAAA",
+        default=None,
+        help="Descarga solo los comprobantes de este día en vez del día anterior a hoy (que es el "
+        "valor por defecto). Ejemplo: --fecha 15/08/2026",
+    )
     args = parser.parse_args()
+
+    if args.fecha and not fecha_valida(args.fecha):
+        sys.exit(f"--fecha inválida: '{args.fecha}'. Usa el formato DD/MM/AAAA, por ejemplo 15/08/2026.")
 
     creds = cargar_credenciales()
     log("=" * 60)
     log("=== Inicio de ejecución ===")
     log(f"Modo: {'DEBUG' if args.debug else 'NORMAL'}{' + SOLO-SUBIR' if args.solo_subir else ''}")
+    log(f"Fecha a descargar: {args.fecha or (fecha_ayer() + ' (ayer, por defecto)')}")
 
     try:
         if args.solo_subir:
@@ -395,12 +887,16 @@ def main() -> None:
             log(f"Modo solo-subir: {len(archivos)} XML(s) encontrados en descargas/")
         else:
             archivos = descargar_xml_sri(
-                creds["SRI_USUARIO"], creds["SRI_CLAVE"], creds["SRI_CI_ADICIONAL"], args.debug
+                creds["SRI_USUARIO"], creds["SRI_CLAVE"], creds["SRI_CI_ADICIONAL"], args.debug, args.fecha
             )
 
         importar_a_la_app(creds["APP_CORREO"], creds["APP_CONTRASENA"], archivos)
     except Exception as exc:
         log(f"ERROR: {exc}")
+        if "has been closed" in str(exc) or "TargetClosedError" in type(exc).__name__:
+            log("AVISO: el navegador se cerró antes de que el script terminara.")
+            log("Si cerraste la ventana del navegador a mano: no hace falta — el script la cierra solo cuando termina.")
+            log("Vuelve a intentarlo y deja la ventana del navegador abierta sin tocarla; en modo debug avanza sola cada pocos segundos.")
         raise
     finally:
         log("=== Fin de ejecución ===")
