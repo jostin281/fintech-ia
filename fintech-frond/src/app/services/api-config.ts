@@ -15,4 +15,4 @@
  * comitea y sube el cambio. Recuerda volver a poner "localhost" aquí si
  * regresas a desarrollar en tu PC después.
  */
-export const API_BASE_URL = 'http://localhost:3001/api';
+export const API_BASE_URL = 'https://fintech-back-api.onrender.com/api';
