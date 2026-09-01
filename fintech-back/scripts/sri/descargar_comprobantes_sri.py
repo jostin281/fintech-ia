@@ -66,8 +66,19 @@ SRI_LOGIN_URL = "https://srienlinea.sri.gob.ec/sri-en-linea/contribuyente/perfil
 # usa automatizacion-sri/descargar_comprobantes_sri.py --debug con una
 # cuenta real y luego copia aquí lo que encuentres.
 SRI_COMPROBANTES_URLS_CANDIDATOS = [
-    # Confirmada con una captura real de pantalla (31/08/2026) — esta es la
-    # que de verdad muestra el listado de comprobantes recibidos.
+    # Confirmada con una captura real de pantalla EN RENDER (01/09/2026):
+    # la URL "pelona" (sin estos parámetros) NO basta -- el portal SRI es
+    # una app JSF y esta pantalla depende del "breadcrumb" de navegación
+    # (contextoMPT/pathMPT/actualMPT/linkMPT) que normalmente pone el
+    # propio menú al hacer clic; sin él, la ruta "pelona" no muestra el
+    # listado. Estos valores son fijos (metadata de navegación, no un
+    # token de sesión), así que se pueden dejar tal cual. El "%F3" es
+    # literal (así codifica el SRI la "ó" en esta pantalla, en
+    # ISO-8859-1, no UTF-8) — no se debe "corregir" a %C3%B3.
+    "https://srienlinea.sri.gob.ec/comprobantes-electronicos-internet/pages/consultas/recibidos/comprobantesRecibidos.jsf?&contextoMPT=https://srienlinea.sri.gob.ec/tuportal-internet&pathMPT=Facturaci%F3n%20Electr%F3nica&actualMPT=Comprobantes%20electr%F3nicos%20recibidos%20&linkMPT=%2Fcomprobantes-electronicos-internet%2Fpages%2Fconsultas%2Frecibidos%2FcomprobantesRecibidos.jsf%3F&esFavorito=S",
+    # Confirmada con una captura real de pantalla (31/08/2026) — la versión
+    # sin esos parámetros; se deja como respaldo por si el SRI deja de
+    # exigir el breadcrumb.
     "https://srienlinea.sri.gob.ec/comprobantes-electronicos-internet/pages/consultas/recibidos/comprobantesRecibidos.jsf",
     "https://srienlinea.sri.gob.ec/sri-en-linea/SriComprobantesElectronicosInternet/ConsultaComprobantesRecibidos/Consultas/consultaComprobantesRecibidos",
     "https://srienlinea.sri.gob.ec/comprobantes-electronicos-internet/pages/consultas/recibidosConsultas.jsf",
