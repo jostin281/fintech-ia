@@ -33,6 +33,7 @@ services:
       # sobreescribe el DATABASE_URL del .env, que apunta a localhost:5433
       # (para cuando corres el backend directo en Windows, sin Docker).
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/fintech?schema=public
+      SRI_DESCARGA_AUTOMATICA_HABILITADA: "true"
     ports:
       - "3001:3001"
     volumes:
@@ -59,8 +60,26 @@ services:
     depends_on:
       - backend
 
+  # ── SRI Automatización (Python + Playwright) ──
+  sri-automation:
+    build: ./automatizacion-sri
+    container_name: fintech-sri-automation
+    restart: unless-stopped
+    env_file:
+      - path: ./automatizacion-sri/credenciales.env
+        required: false
+    environment:
+      - API_BASE_URL=http://backend:3001/api
+      - RUN_INTERVAL_HOURS=12
+      - RUN_ON_STARTUP=true
+    volumes:
+      - ./automatizacion-sri/descargas:/app/descargas
+    depends_on:
+      - backend
+
 volumes:
   fintech_pgdata:
   fintech_back_node_modules:
   fintech_back_prisma_generado:
   fintech_frond_node_modules:
+

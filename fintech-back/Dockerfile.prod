@@ -1,0 +1,22 @@
+# Imagen de Producción Backend (NestJS compilado)
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+RUN apt-get update -y && apt-get install -y openssl python3 python3-pip && rm -rf /var/lib/apt/lists/*
+
+COPY scripts/sri/requirements.txt ./scripts/sri/requirements.txt
+RUN pip install --break-system-packages --no-cache-dir -r scripts/sri/requirements.txt \
+    && python3 -m playwright install --with-deps chromium
+
+COPY package*.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+EXPOSE 3001
+
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma generate && npx tsx prisma/seed.ts && npm run start:prod"]

@@ -79,7 +79,7 @@ SRI_COMPROBANTES_URLS_CANDIDATOS = [
 
 TEXTO_MENU_COMPROBANTES_RECIBIDOS = "Comprobantes electrónicos recibidos"
 
-API_BASE_URL = "http://localhost:3001/api"
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:3001/api")
 
 # Selectores del portal SRI en Línea (JSF). Se prueban en orden; el primero
 # que encuentre el elemento es el que se usa. Si todos fallan con --debug,
@@ -223,17 +223,15 @@ def pausa_debug(mensaje: str, segundos_si_no_hay_terminal: float = 4.0) -> None:
 
 def cargar_credenciales() -> dict:
     env_path = BASE_DIR / "credenciales.env"
-    if not env_path.exists():
-        sys.exit(
-            "No encontré credenciales.env. Copia credenciales.env.example a "
-            "credenciales.env y completa tus datos antes de ejecutar."
-        )
-    load_dotenv(env_path)
+    if env_path.exists():
+        load_dotenv(env_path)
     requeridas = ["SRI_USUARIO", "SRI_CLAVE", "APP_CORREO", "APP_CONTRASENA"]
     valores = {clave: os.getenv(clave) for clave in requeridas}
     faltantes = [c for c, v in valores.items() if not v]
     if faltantes:
-        sys.exit(f"Faltan valores en credenciales.env: {', '.join(faltantes)}")
+        sys.exit(
+            f"Faltan valores requeridos en credenciales.env o variables de entorno: {', '.join(faltantes)}"
+        )
     # Opcional: campo "C.I. adicional" del login del SRI (login como
     # tercero autorizado). No es obligatorio, se deja vacío si no está.
     valores["SRI_CI_ADICIONAL"] = os.getenv("SRI_CI_ADICIONAL") or ""

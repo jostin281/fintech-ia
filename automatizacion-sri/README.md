@@ -5,6 +5,22 @@ Este script corre **en tu propia computadora** (no en la nube) y hace dos cosas:
 1. Inicia sesión en SRI en Línea con tus credenciales del SRI y descarga los XML de tus comprobantes electrónicos recibidos.
 2. Inicia sesión en tu app FinTech (con tu correo/contraseña de la app) y sube esos XML al endpoint de importación de "Comprobantes Recibidos", donde quedan categorizados con su desglose automáticamente — lo mismo que hace el botón "Importar" de esa pantalla, pero sin que tengas que hacerlo a mano.
 
+## 🐳 Uso con Docker Compose (Recomendado para servidores/despliegues)
+
+La automatización del SRI ya viene integrada como un servicio dentro de `docker-compose.yml` (`fintech-sri-automation` y en el backend NestJS).
+
+1. Define tus credenciales en `automatizacion-sri/credenciales.env` (o en las variables de entorno de tu contenedor).
+2. Levanta todo el stack con Docker:
+   ```bash
+   docker compose up -d
+   ```
+3. Revisa los logs del contenedor de automatización SRI en tiempo real:
+   ```bash
+   docker compose logs -f sri-automation
+   ```
+
+---
+
 ## 🖱️ Forma más fácil: panel con botones (recomendado)
 
 En vez de escribir comandos en una terminal, puedes usar un panel con botones:
